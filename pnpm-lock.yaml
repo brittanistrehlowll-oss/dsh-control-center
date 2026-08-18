@@ -113,6 +113,15 @@ importers:
         specifier: workspace:*
         version: link:../control-contract
 
+  packages/quota-adapter:
+    dependencies:
+      '@dsh-control-center/control-contract':
+        specifier: workspace:*
+        version: link:../control-contract
+      '@dsh-control-center/security':
+        specifier: workspace:*
+        version: link:../security
+
   packages/runtime-discovery:
     dependencies:
       '@dsh-control-center/control-contract':

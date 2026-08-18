@@ -21,21 +21,41 @@ pnpm 11.19.0. Root scripts: `build`, `typecheck`, `lint`, `test`,
 | `@dsh-control-center/operation-journal` | Append-only `operations.jsonl` (fsync on critical events), atomic JSON write (temp→flush→rename, EEXIST/EPERM retry), `current-operation.json` as derived cache, unfinished-operation reconstruction, JournalCorruptError | ✅ |
 | `@dsh-control-center/runtime-discovery` | Probe + `InstanceIdentity` (strong/weak/none) + `Ownership` inference. **Reworked 2026-08-18 to the verified real DSH surface** (health, controller, RPC) | ✅ |
 | `@dsh-control-center/snapshot-store` | Atomic save with **last-good fallback**, `assertSafeSurfaceSnapshot` defends against prompt/assistant/tool/cookie/auth/key/secret/credential/shell/command/transcript/raw-response/session-log keys | ✅ |
-| `@dsh-control-center/security` | (scaffold only — package.json/tsconfig; implementation pending) | ⚠️ |
-| `@dsh-control-center/diagnostics` | (scaffold only — pending) | ⚠️ |
-| `@dsh-control-center/dsh-client` | (scaffold only — pending) | ⚠️ |
-| `@dsh-control-center/supervisor-core` | (scaffold only — pending) | ⚠️ |
-| `@dsh-control-center/update-provider` | (scaffold only — pending) | ⚠️ |
-| `adapters/lifecycle/legacy-watchdog` | (scaffold only — pending) | ⚠️ |
+| `@dsh-control-center/security` | Redaction + secret detection + safe logging helpers (`redact`, `redactLogLine`, `assertNoSensitiveKeys`, `UnsafeContentError`) + 5 tests | ✅ |
+| `@dsh-control-center/diagnostics` | PASS/WARN/FAIL/UNKNOWN builder across 15 checks (supervisor/IPC/DSH/identity/ownership/watchdog/ports/quota/update/snapshot/journal/permissions/disk) + 3 tests | ✅ |
+| `@dsh-control-center/dsh-client` | Read-only RPC client against the real `POST /api/<method>` gateway: loopback-only, timeout/body caps, content-type check, RPC envelope validation, sanitize ≤5 sessions, redact raw + 4 tests | ✅ |
+| `@dsh-control-center/quota-adapter` | Fixed quota pipeline: credential resolve → trusted endpoint → timeout/body cap → content-type check → JSON parse → schema validation → normalize → `QuotaSnapshot`; state from thresholds; raw upstream never forwarded + 7 tests | ✅ |
+| `@dsh-control-center/supervisor-core` | Single-instance lock (O_EXCL + stale-pid takeover), `supervisorInstanceId`, journal recovery, unfinished rebuild, mutation lease + idempotency replay, observer + 5 tests | ✅ |
+| `@dsh-control-center/update-provider` | Pinned `deepseek-ai/deepseek-harness`, dev-source UNTRUSTED flag, `dsh-v<semver>` tag parse, tag→commit→version chain, node/pnpm toolchain gate, one-click gate, rollback decisions + 8 tests | ✅ |
+| `adapters/lifecycle/legacy-watchdog` | ADR-004 boundary: dry-run, marker-intent lifecycle, restart FSM, external-restart detection, crash reconciliation; `file-gateway.ts` holds ALL legacy details (3080/3081/markers) + 7 tests | ✅ |
+| `apps/supervisor` | Runnable read-only first-round entry: identify DSH, read version/fingerprint, confirm ownership=legacy, legacy dry-run; wrote validated snapshot during live validation | ✅ |
+| `apps/control-surface` | Electron shell **placeholder** gated behind Checkpoints A/B/C (security posture contract: sandbox/contextIsolation/CSP, no destructive buttons) | ⚠️ gated |
 | `tests/fake-runtime` | Fake DSH runtime. **Reworked 2026-08-18** to mirror real surface: `/api/system/health` with per-boot `bootId`, POST `/api/session.list` RPC, optional legacy controller surface at a second port | ✅ |
 
 ### Test coverage today
 
+- `control-contract`: schema round-trip + negative (strictness, session cap, envelope shape).
 - `operation-journal`: durable append + reconstruction; terminal-status exclusion.
-- `runtime-discovery`: non-DSH 200 rejected; health schema accepted; strong identity
-  requires non-reusable evidence; boot change detection; ownership mapping.
+- `runtime-discovery`: real health schema; non-DSH 200 rejected (`NOT_DSH`); strong identity
+  requires non-reusable evidence; boot change; ownership mapping.
 - `snapshot-store`: atomic write + last-good fallback; prompt-like field rejection.
+- `security`: sensitive keys, deep redaction, secret-looking values, log lines, assert.
+- `dsh-client`: health, RPC session.list sanitize/redact, non-loopback reject, capability absence.
+- `quota-adapter`: ok/warn/critical derivation, non-JSON content-type, body cap, timeout,
+  not-configured/untrusted endpooint fail-closed.
+- `diagnostics`: all-PASS healthy; identity/watchdog failure flags; enum containment.
+- `update-provider`: tag parse, chain verify, version mismatch, untrusted source, toolchain,
+  one-click gate, rollback mapping.
+- `supervisor-core`: single-instance lock, instance id, lease + idempotent replay, journal
+  recovery across restart, observer snapshot write.
+- `legacy-watchdog`: dry-run offline/online, marker intent, external restart detection,
+  crash reconciliation, restart-success identity gate, FSM stages.
 - `integration/fake-runtime`: identity across restarts; controller corroboration.
+- `tests/security/pipeline`: hostile RPC envelope → redact → snapshot refuse; bounded redacted sessions.
+
+**44 tests across 11 files, all green** (`pnpm test`). Live DSH read-only validation
+(2026-08-18): health probe, controller corroboration, RPC `session.list` → ≤5 sanitized
+sessions, redacted raw, snapshot written to temp state.
 
 ### Missing (this session's work)
 

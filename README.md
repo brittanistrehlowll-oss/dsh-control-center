@@ -40,6 +40,7 @@ code now probes what DSH actually answers.
 
 ```
 apps/supervisor            runnable supervisor entry (read-only first round)
+apps/control-surface       gated Electron-shell placeholder (Checkpoint B/C)
 packages/control-contract  all V1.1 Zod schemas (the contract)
 packages/operation-journal append-only operations.jsonl + atomic JSON
 packages/runtime-discovery real-surface probing + identity + ownership
@@ -47,6 +48,7 @@ packages/snapshot-store    atomic snapshots, last-good, sensitive scan
 packages/security          redaction + secret detection
 packages/diagnostics       PASS/WARN/FAIL/UNKNOWN across subsystems
 packages/dsh-client        read-only RPC client (bounded, redacted)
+packages/quota-adapter     fixed trusted-endpoint quota pipeline
 packages/update-provider   official-source verify + compatibility + rollback
 packages/supervisor-core   single-instance lock, journal recovery, reconcile
 adapters/lifecycle/legacy-watchdog  ONLY place knowing 3080/3081/markers
