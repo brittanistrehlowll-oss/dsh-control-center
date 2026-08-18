@@ -85,6 +85,45 @@ describe('Supervisor core', () => {
     await supervisor.stop();
   });
 
+  it('replays a terminal operation with the same idempotencyKey (full-history idempotency)', async () => {
+    const root = await freshRoot();
+    const supervisor = new Supervisor({
+      stateDir: root,
+      supervisorInstanceId: 'supervisor-idem',
+      candidates: []
+    });
+    await supervisor.start();
+    const op = await supervisor.beginMutation({
+      action: 'restart',
+      idempotencyKey: 'idem-terminal',
+      runtimeId: 'runtime-1',
+      leaseHolder: 'supervisor-idem'
+    });
+    // Complete the operation (as the adapter would after a verified restart).
+    const completed = {
+      ...op,
+      status: 'completed' as const,
+      updatedAt: new Date().toISOString()
+    };
+    await supervisor.journal.append({
+      event: 'completed',
+      operationId: op.operationId,
+      payload: { operation: completed }
+    });
+    await supervisor.journal.reconcileDerivedState();
+
+    // A new request with the same key must replay the terminal op, not create one.
+    const replay = await supervisor.beginMutation({
+      action: 'restart',
+      idempotencyKey: 'idem-terminal',
+      runtimeId: 'runtime-1',
+      leaseHolder: 'supervisor-idem'
+    });
+    expect(replay.operationId).toBe(op.operationId);
+    expect(replay.status).toBe('completed');
+    await supervisor.stop();
+  });
+
   it('rebuilds unfinished operations across a supervisor restart', async () => {
     const root = await freshRoot();
     const first = new Supervisor({ stateDir: root, supervisorInstanceId: 's-a', candidates: [] });

@@ -29,6 +29,7 @@ export interface FileGatewayOptions {
   controllerUrl?: string;
   fetchImpl?: typeof fetch;
   timeoutMs?: number;
+  maxBodyBytes?: number;
 }
 
 export class FileGateway implements LifecycleGateway {
@@ -36,12 +37,14 @@ export class FileGateway implements LifecycleGateway {
   private readonly controllerUrl: string;
   private readonly fetchImpl: typeof fetch;
   private readonly timeoutMs: number;
+  private readonly maxBodyBytes: number;
 
   constructor(options: FileGatewayOptions) {
     this.dshLogsDir = options.dshLogsDir;
     this.controllerUrl = options.controllerUrl ?? `http://127.0.0.1:${LEGACY_CONTROLLER_PORT}`;
     this.fetchImpl = options.fetchImpl ?? fetch;
     this.timeoutMs = options.timeoutMs ?? 2_000;
+    this.maxBodyBytes = options.maxBodyBytes ?? 16 * 1024;
   }
 
   async writeMarker(action: 'start' | 'stop' | 'restart'): Promise<{ ok: boolean; id: string }> {
@@ -72,7 +75,16 @@ export class FileGateway implements LifecycleGateway {
         signal: controller.signal
       });
       if (!response.ok) return undefined;
-      const body = await response.json() as Record<string, unknown>;
+      const buffer = new Uint8Array(await response.arrayBuffer());
+      if (buffer.byteLength > this.maxBodyBytes) return undefined;
+      let body: Record<string, unknown>;
+      try {
+        const parsed = JSON.parse(new TextDecoder().decode(buffer)) as unknown;
+        if (typeof parsed !== 'object' || parsed === null) return undefined;
+        body = parsed as Record<string, unknown>;
+      } catch {
+        return undefined;
+      }
       if (typeof body.state !== 'string') return undefined;
       return {
         state: body.state,

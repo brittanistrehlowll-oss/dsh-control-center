@@ -235,6 +235,16 @@ export class Supervisor {
       throw new MutationBusyError();
     }
 
+    // Full-history idempotency: a terminal operation with the same key is
+    // replayed as its outcome rather than creating a new operation.
+    const previous = await this.journal.getOperationByIdempotencyKey(input.idempotencyKey);
+    if (previous) {
+      if (previous.action !== input.action) {
+        throw new IdempotencyConflictError(input.idempotencyKey);
+      }
+      return previous;
+    }
+
     const operation: LifecycleOperation = LifecycleOperationSchema.parse({
       schemaVersion: 1,
       operationId: 'op-' + randomUUID().slice(0, 12),

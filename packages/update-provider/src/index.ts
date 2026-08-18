@@ -120,9 +120,11 @@ export function checkToolchain(nodeVersion: string, pnpmVersion: string): { comp
   const reasons: string[] = [];
   const nodeOk = satisfiesNodeRange(nodeVersion);
   if (!nodeOk) reasons.push(`node ${nodeVersion} outside ${REQUIRED_NODE_RANGE}`);
-  const pnpmOk = pnpmVersion === REQUIRED_PNPM || pnpmVersion.startsWith(REQUIRED_PNPM + '.') ||
-    Number.parseInt(pnpmVersion.split('.')[0] ?? '0', 10) >= 11;
-  if (!pnpmOk) reasons.push(`pnpm ${pnpmVersion} below required ${REQUIRED_PNPM}`);
+  // DSH requires pnpm 11.7.0. Accept 11.x >= 11.7.0; reject other majors.
+  const pnpmMajor = Number.parseInt(pnpmVersion.split('.')[0] ?? '0', 10);
+  const pnpmMinor = Number.parseInt(pnpmVersion.split('.')[1] ?? '0', 10);
+  const pnpmOk = pnpmMajor === 11 && pnpmMinor >= 7;
+  if (!pnpmOk) reasons.push(`pnpm ${pnpmVersion} below required ${REQUIRED_PNPM} (11.x >= 11.7.0)`);
   return { compatible: nodeOk && pnpmOk, reasons };
 }
 

@@ -168,6 +168,19 @@ export class OperationJournal {
     return [...states.values()].filter((operation) => !terminalStatuses.has(operation.status));
   }
 
+  /** Find the latest operation ever recorded for an idempotencyKey (full history). */
+  async getOperationByIdempotencyKey(idempotencyKey: string): Promise<LifecycleOperation | undefined> {
+    const states = await this.getOperationStates();
+    let latest: LifecycleOperation | undefined;
+    for (const operation of states.values()) {
+      if (operation.idempotencyKey === idempotencyKey &&
+        (latest === undefined || operation.updatedAt >= latest.updatedAt)) {
+        latest = operation;
+      }
+    }
+    return latest;
+  }
+
   async persistCurrentOperation(operation: LifecycleOperation | undefined): Promise<void> {
     this.assertInitialized();
     if (operation) {

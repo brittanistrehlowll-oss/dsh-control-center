@@ -140,6 +140,48 @@ describe('RestartFsm — success rule (identity gate)', () => {
       leaseValid: true
     });
     expect(outcome.status).toBe('unconfirmed');
+
+    // Stale same-boot: strong identity both sides with the SAME value must
+    // never be reported verified — this is the "stale HTTP 200" false positive.
+    const now = new Date().toISOString();
+    const sameIdentity = {
+      strength: 'strong' as const,
+      value: 'same-boot-value',
+      evidence: { pid: 100, bootId: 'boot-A', profileId: 'web' },
+      observedAt: now
+    };
+    const stale = new RestartFsm({
+      operationId: 'op-stale',
+      idempotencyKey: 'idem-stale',
+      expectedProfileId: 'web',
+      lease: { holder: 's', acquiredAt: new Date().toISOString() }
+    });
+    const staleOutcome = stale.evaluateSuccess({
+      ready: true,
+      identityStrength: 'strong',
+      oldIdentity: sameIdentity,
+      newIdentity: sameIdentity,
+      profileMatches: true,
+      leaseValid: true
+    });
+    expect(staleOutcome.status).toBe('unconfirmed');
+
+    // Profile mismatch after restart = failed, not verified.
+    const mismatch = new RestartFsm({
+      operationId: 'op-prof',
+      idempotencyKey: 'idem-prof',
+      expectedProfileId: 'web',
+      lease: { holder: 's', acquiredAt: new Date().toISOString() }
+    });
+    const mismatchOutcome = mismatch.evaluateSuccess({
+      ready: true,
+      identityStrength: 'strong',
+      oldIdentity: { ...sameIdentity, value: 'old' },
+      newIdentity: { ...sameIdentity, value: 'new' },
+      profileMatches: false,
+      leaseValid: true
+    });
+    expect(mismatchOutcome.status).toBe('failed');
     if (outcome.status === 'unconfirmed') {
       expect(outcome.reason).toBe('no-strong-identity');
     }
