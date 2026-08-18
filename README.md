@@ -82,6 +82,16 @@ pnpm --filter @dsh-control-center/supervisor start -- --state-dir "%LOCALAPPDATA
 - [docs/CHECKPOINTS.md](docs/CHECKPOINTS.md) — Checkpoints A/B/C acceptance
 - [docs/decisions/](docs/decisions/) — ADR-001..004
 
+## CI
+
+The workflow file lives at `.github/workflows/ci.yml` in the source checkout
+but is **not committed to this repository yet**: the publishing token lacks the
+GitHub `workflow` scope (GitHub refuses PAT pushes that create/update workflow
+files without it). To enable CI: add the file via a pull request made by an
+account/token that has `workflow` scope, or grant the scope to the publishing
+token. The workflow runs `pnpm build`, `pnpm test`, `verify:contract`,
+`scan:secret`, `scan:path`, `hash:artifacts` on `windows-latest` + Node 24.
+
 ## Repository topics
 
 `dsh-plugin`, `deepseek-harness`, `deepseek`, `control-center`
