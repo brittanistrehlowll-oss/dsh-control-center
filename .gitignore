@@ -1,0 +1,15 @@
+node_modules/
+dist/
+.turbo/
+.pnpm-store/
+coverage/
+*.log
+*.tmp
+.env
+.env.*
+!.env.example
+artifacts/
+release/
+state/
+test-output/
+*.tsbuildinfo

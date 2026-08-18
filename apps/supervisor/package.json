@@ -1,0 +1,24 @@
+{
+  "name": "@dsh-control-center/supervisor",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx src/index.ts",
+    "start": "tsx src/index.ts",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "build": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@dsh-control-center/operation-journal": "workspace:*",
+    "@dsh-control-center/runtime-discovery": "workspace:*",
+    "@dsh-control-center/security": "workspace:*",
+    "@dsh-control-center/snapshot-store": "workspace:*",
+    "@dsh-control-center/supervisor-core": "workspace:*",
+    "@dsh-control-center/legacy-watchdog-adapter": "workspace:*"
+  },
+  "devDependencies": {
+    "tsx": "4.19.3",
+    "typescript": "5.8.3"
+  }
+}

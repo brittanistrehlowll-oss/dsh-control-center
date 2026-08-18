@@ -1,0 +1,11 @@
+packages:
+  - apps/*
+  - packages/*
+  - adapters/*/*
+  - tests/fake-runtime
+
+allowBuilds:
+  esbuild: true
+
+onlyBuiltDependencies:
+  - esbuild

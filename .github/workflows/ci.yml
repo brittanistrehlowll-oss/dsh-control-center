@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  push:
+    branches: [master, main]
+  pull_request:
+
+jobs:
+  verify:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 11.19.0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+
+      - name: Test
+        run: pnpm test
+
+      - name: Contract verification
+        run: pnpm verify:contract
+
+      - name: Sensitive scan
+        run: pnpm scan:secret
+
+      - name: Path scan
+        run: pnpm scan:path
+
+      - name: Hash artifacts (no-op when none)
+        run: pnpm hash:artifacts

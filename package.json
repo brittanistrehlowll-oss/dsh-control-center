@@ -1,0 +1,37 @@
+{
+  "name": "dsh-control-center",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.19.0",
+  "engines": {
+    "node": ">=22.19.0"
+  },
+  "scripts": {
+    "build": "pnpm -r --if-present build",
+    "typecheck": "pnpm -r --if-present typecheck",
+    "lint": "pnpm typecheck",
+    "test": "pnpm build && vitest run",
+    "test:contracts": "pnpm build && vitest run packages/control-contract tests/contract*.test.ts",
+    "test:integration": "pnpm build && vitest run tests/integration",
+    "test:security": "pnpm build && vitest run tests/security",
+    "scan:secret": "node scripts/scan-sensitive.mjs",
+    "scan:path": "node scripts/scan-paths.mjs",
+    "verify:contract": "node scripts/verify-contract.mjs",
+    "hash:artifacts": "node scripts/hash-artifacts.mjs",
+    "dev:surface": "pnpm --filter @dsh-control-center/control-surface dev",
+    "dev:supervisor": "pnpm --filter @dsh-control-center/supervisor dev"
+  },
+  "devDependencies": {
+    "@dsh-control-center/control-contract": "workspace:*",
+    "@dsh-control-center/fake-runtime": "workspace:*",
+    "@dsh-control-center/runtime-discovery": "workspace:*",
+    "@types/node": "22.15.3",
+    "tsx": "4.19.3",
+    "typescript": "5.8.3",
+    "vitest": "3.1.1"
+  },
+  "dependencies": {
+    "zod": "3.25.76"
+  }
+}
