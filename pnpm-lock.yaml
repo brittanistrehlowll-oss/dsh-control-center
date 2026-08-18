@@ -15,12 +15,21 @@ importers:
       '@dsh-control-center/control-contract':
         specifier: workspace:*
         version: link:packages/control-contract
+      '@dsh-control-center/dsh-client':
+        specifier: workspace:*
+        version: link:packages/dsh-client
       '@dsh-control-center/fake-runtime':
         specifier: workspace:*
         version: link:tests/fake-runtime
       '@dsh-control-center/runtime-discovery':
         specifier: workspace:*
         version: link:packages/runtime-discovery
+      '@dsh-control-center/security':
+        specifier: workspace:*
+        version: link:packages/security
+      '@dsh-control-center/snapshot-store':
+        specifier: workspace:*
+        version: link:packages/snapshot-store
       '@types/node':
         specifier: 22.15.3
         version: 22.15.3
