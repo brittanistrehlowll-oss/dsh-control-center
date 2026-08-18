@@ -52,6 +52,12 @@ importers:
         specifier: workspace:*
         version: link:../../../packages/security
 
+  apps/control-surface:
+    devDependencies:
+      typescript:
+        specifier: 5.8.3
+        version: 5.8.3
+
   apps/supervisor:
     dependencies:
       '@dsh-control-center/legacy-watchdog-adapter':
