@@ -3,6 +3,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { FakeDshRuntime } from '@dsh-control-center/fake-runtime';
+import { DshClient } from '@dsh-control-center/dsh-client';
 import {
   MutationBusyError,
   Supervisor,
@@ -176,6 +177,53 @@ describe('Supervisor core', () => {
     const probe = supervisor.lastKnownProbe();
     expect(probe?.protocolValid).toBe(true);
     expect(probe?.health?.bootId).toBe(address.bootId);
+    await supervisor.stop();
+  });
+
+  it('builds a full snapshot with sessions, quota and diagnostics wired', async () => {
+    const root = await freshRoot();
+    const runtime = new FakeDshRuntime({ runtimeId: 'full' });
+    runtimes.push(runtime);
+    const address = await runtime.start();
+
+    const supervisor = new Supervisor({
+      stateDir: root,
+      supervisorInstanceId: 's-full',
+      candidates: [{
+        runtimeId: address.runtimeId,
+        source: 'legacy-watchdog',
+        baseUrl: address.baseUrl,
+        installOrigin: 'local-node-modules',
+        installAuthority: 'delegated',
+        profileId: address.profile,
+        processId: address.processId,
+        processStartedAt: address.processStartedAt,
+        commandFingerprint: address.commandFingerprint
+      }]
+    });
+
+    let observerCtx: import('./index.js').ObserverContext | undefined;
+    const saved: Array<unknown> = [];
+    await supervisor.start({
+      dshClient: new DshClient({ baseUrl: address.baseUrl, clientTag: 'test-full' }),
+      observer: async (ctx) => { observerCtx = ctx; },
+      snapshotWriter: {
+        save: async (snapshot) => { saved.push(snapshot); },
+        load: async () => undefined
+      }
+    });
+    await supervisor.runObserver();
+
+    // Observer context carries sessions/quota/diagnostics counts.
+    expect(observerCtx?.sessions).toBeGreaterThan(0);
+    expect(Array.isArray(observerCtx?.quotaStates)).toBe(true);
+    expect(observerCtx?.diagnostics.length).toBeGreaterThan(0);
+
+    // Full snapshot: recentSessions capped at 5, diagnostics summary filled.
+    const snapshot = saved[0] as { recentSessions: unknown[]; diagnostics: { counts: Record<string, number> } };
+    expect(snapshot.recentSessions.length).toBeGreaterThan(0);
+    expect(snapshot.recentSessions.length).toBeLessThanOrEqual(5);
+    expect(snapshot.diagnostics.counts).toBeDefined();
     await supervisor.stop();
   });
 });

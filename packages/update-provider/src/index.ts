@@ -7,6 +7,15 @@ import {
   type UpdateCandidate
 } from '@dsh-control-center/control-contract';
 
+export { UpdateCoordinator, STAGING_ROOT } from './coordinator.js';
+export type {
+  StagedRuntime,
+  UpdateContext,
+  UpdateExecutors,
+  UpdatePhase,
+  UpdateResult
+} from './coordinator.js';
+
 /**
  * update-provider — official-update discovery, verification, and compatibility
  * preflight for deepseek-ai/deepseek-harness.

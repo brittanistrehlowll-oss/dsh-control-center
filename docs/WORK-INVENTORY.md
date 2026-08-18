@@ -26,7 +26,7 @@ pnpm 11.19.0. Root scripts: `build`, `typecheck`, `lint`, `test`,
 | `@dsh-control-center/dsh-client` | Read-only RPC client against the real `POST /api/<method>` gateway: loopback-only, timeout/body caps, content-type check, RPC envelope validation, sanitize ≤5 sessions, redact raw + 4 tests | ✅ |
 | `@dsh-control-center/quota-adapter` | Fixed quota pipeline: credential resolve → trusted endpoint → timeout/body cap → content-type check → JSON parse → schema validation → normalize → `QuotaSnapshot`; state from thresholds; raw upstream never forwarded + 7 tests | ✅ |
 | `@dsh-control-center/supervisor-core` | Single-instance lock (O_EXCL + stale-pid takeover), `supervisorInstanceId`, journal recovery, unfinished rebuild, mutation lease + idempotency replay, observer + 5 tests | ✅ |
-| `@dsh-control-center/update-provider` | Pinned `deepseek-ai/deepseek-harness`, dev-source UNTRUSTED flag, `dsh-v<semver>` tag parse, tag→commit→version chain, node/pnpm toolchain gate, one-click gate, rollback decisions + 8 tests | ✅ |
+| `@dsh-control-center/update-provider` | Pinned `deepseek-ai/deepseek-harness`, dev-source UNTRUSTED flag, `dsh-v<semver>` tag parse, tag→commit→version chain, node/pnpm toolchain gate, one-click gate, rollback decisions + `UpdateCoordinator` (Checkpoint B: verify→gate→stage→apply→verify→rollback, fail-closed executors, canonical staging layout with stamped manifest) + 17 tests | ✅ |
 | `adapters/lifecycle/legacy-watchdog` | ADR-004 boundary: dry-run, marker-intent lifecycle, restart FSM, external-restart detection, crash reconciliation; `file-gateway.ts` holds ALL legacy details (3080/3081/markers) + 7 tests | ✅ |
 | `apps/supervisor` | Runnable read-only first-round entry: identify DSH, read version/fingerprint, confirm ownership=legacy, legacy dry-run; wrote validated snapshot during live validation | ✅ |
 | `apps/control-surface` | Electron shell **placeholder** gated behind Checkpoints A/B/C (security posture contract: sandbox/contextIsolation/CSP, no destructive buttons) | ⚠️ gated |
@@ -53,9 +53,11 @@ pnpm 11.19.0. Root scripts: `build`, `typecheck`, `lint`, `test`,
 - `integration/fake-runtime`: identity across restarts; controller corroboration.
 - `tests/security/pipeline`: hostile RPC envelope → redact → snapshot refuse; bounded redacted sessions.
 
-**44 tests across 11 files, all green** (`pnpm test`). Live DSH read-only validation
+**62 tests across 13 files, all green** (`pnpm test`). Live DSH read-only validation
 (2026-08-18): health probe, controller corroboration, RPC `session.list` → ≤5 sanitized
-sessions, redacted raw, snapshot written to temp state.
+sessions, redacted raw, snapshot written to temp state. Checkpoint B (Update Gate)
+implemented: UpdateCoordinator with fail-closed real execution, full rollback matrix,
+canonical staging layout; supervisor snapshot wired with sessions/quota/diagnostics.
 
 ### Missing (this session's work)
 

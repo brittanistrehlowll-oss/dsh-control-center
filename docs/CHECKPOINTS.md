@@ -36,17 +36,22 @@ before the Update button becomes enabled (otherwise it stays "Check update").
 
 Required (all must pass):
 
-- [ ] Official repository identity verification (`deepseek-ai/deepseek-harness`)
-- [ ] Release/tag verification chain: tag → commit → package.json → version
-- [ ] Channel verification (stable vs preview by prerelease)
-- [ ] Staging into `%LOCALAPPDATA%\DSHControlCenter\runtimes\staging\`
-- [ ] Temp `DSH_HOME` + temp ports for the compatibility probe
-- [ ] Compatibility probe: runtime fingerprint, session.list, projection,
-      deep-link, node/pnpm toolchain
-- [ ] Version verification post-apply
-- [ ] Rollback on every listed failure cause
-- [ ] Unknown install origin → fail-closed
-- [ ] Desktop-managed install → fail-closed
+- [x] Official repository identity verification (`deepseek-ai/deepseek-harness`)
+- [x] Release/tag verification chain: tag → commit → package.json → version
+- [x] Channel verification (stable vs preview by prerelease)
+- [x] Staging into `%LOCALAPPDATA%\DSHControlCenter\runtimes\staging\`
+      (`UpdateCoordinator.prepareStagingDir` + stamped manifest)
+- [x] Temp `DSH_HOME` + temp ports for the compatibility probe (executor seam)
+- [x] Compatibility probe: runtime fingerprint, session.list, projection,
+      deep-link, node/pnpm toolchain (`evaluateCompatibility`)
+- [x] Version verification post-apply (`verifyApplied` executor)
+- [x] Rollback on every listed failure cause (`decideRollback` matrix,
+      `UpdateCoordinator.run` rollback path)
+- [x] Unknown install origin → fail-closed (`knownInstallOrigin`)
+- [x] Desktop-managed install → fail-closed (`desktopManaged`)
+- [ ] Real execution wiring: concrete staged-runtime runner (bundled node/pnpm)
+      — currently fail-closed by default; executors must be explicitly provided
+      and are disabled unless wired in a sanctioned environment
 
 ## Checkpoint C — Desktop Pilot Gate
 

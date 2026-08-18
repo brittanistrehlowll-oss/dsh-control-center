@@ -16,7 +16,10 @@
   },
   "dependencies": {
     "@dsh-control-center/control-contract": "workspace:*",
+    "@dsh-control-center/diagnostics": "workspace:*",
+    "@dsh-control-center/dsh-client": "workspace:*",
     "@dsh-control-center/operation-journal": "workspace:*",
+    "@dsh-control-center/quota-adapter": "workspace:*",
     "@dsh-control-center/runtime-discovery": "workspace:*",
     "@dsh-control-center/security": "workspace:*"
   }

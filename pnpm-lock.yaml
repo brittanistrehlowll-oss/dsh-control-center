@@ -60,6 +60,9 @@ importers:
 
   apps/supervisor:
     dependencies:
+      '@dsh-control-center/dsh-client':
+        specifier: workspace:*
+        version: link:../../packages/dsh-client
       '@dsh-control-center/legacy-watchdog-adapter':
         specifier: workspace:*
         version: link:../../adapters/lifecycle/legacy-watchdog
@@ -78,6 +81,9 @@ importers:
       '@dsh-control-center/supervisor-core':
         specifier: workspace:*
         version: link:../../packages/supervisor-core
+      '@dsh-control-center/update-provider':
+        specifier: workspace:*
+        version: link:../../packages/update-provider
     devDependencies:
       tsx:
         specifier: 4.19.3
@@ -148,9 +154,18 @@ importers:
       '@dsh-control-center/control-contract':
         specifier: workspace:*
         version: link:../control-contract
+      '@dsh-control-center/diagnostics':
+        specifier: workspace:*
+        version: link:../diagnostics
+      '@dsh-control-center/dsh-client':
+        specifier: workspace:*
+        version: link:../dsh-client
       '@dsh-control-center/operation-journal':
         specifier: workspace:*
         version: link:../operation-journal
+      '@dsh-control-center/quota-adapter':
+        specifier: workspace:*
+        version: link:../quota-adapter
       '@dsh-control-center/runtime-discovery':
         specifier: workspace:*
         version: link:../runtime-discovery

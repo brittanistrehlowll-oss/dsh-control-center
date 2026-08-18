@@ -21,10 +21,12 @@ import { join } from 'node:path';
 import { SnapshotStore } from '@dsh-control-center/snapshot-store';
 import { RuntimeDiscovery } from '@dsh-control-center/runtime-discovery';
 import { Supervisor } from '@dsh-control-center/supervisor-core';
+import { DshClient } from '@dsh-control-center/dsh-client';
+import { UpdateCoordinator } from '@dsh-control-center/update-provider';
 import { FileGateway } from '@dsh-control-center/legacy-watchdog-adapter';
 import { LEGACY_CONTROLLER_PORT, LEGACY_DSH_PORT } from '@dsh-control-center/legacy-watchdog-adapter';
 
-function parseArgs(): { stateDir: string; dshLogsDir: string } {
+function parseArgs(): { stateDir: string; dshLogsDir: string; checkUpdate: string | undefined } {
   const args = process.argv.slice(2);
   const get = (flag: string) => {
     const index = args.indexOf(flag);
@@ -32,14 +34,15 @@ function parseArgs(): { stateDir: string; dshLogsDir: string } {
   };
   return {
     stateDir: get('--state-dir') ?? join(tmpdir(), 'dsh-control-center', 'state'),
-    dshLogsDir: get('--dsh-logs-dir') ?? join(process.cwd(), 'logs')
+    dshLogsDir: get('--dsh-logs-dir') ?? join(process.cwd(), 'logs'),
+    checkUpdate: get('--check-update')
   };
 }
 
 const INSPECT_REPORT = 'dsh-control-center:inspect-report.json';
 
 async function main(): Promise<number> {
-  const { stateDir, dshLogsDir } = parseArgs();
+  const { stateDir, dshLogsDir, checkUpdate } = parseArgs();
 
   // Candidates: legacy-watchdog source via the real controller.
   const candidates = [{
@@ -55,6 +58,28 @@ async function main(): Promise<number> {
   const discovery = new RuntimeDiscovery(candidates);
   const probe = await discovery.discover();
   const gateway = new FileGateway({ dshLogsDir });
+
+  // Checkpoint B "check update" mode: pure planning, zero execution.
+  if (checkUpdate) {
+    const coordinator = new UpdateCoordinator();
+    const plan = await coordinator.plan({
+      repository: 'deepseek-ai/deepseek-harness',
+      version: checkUpdate,
+      commitSha: '0000000000000000000000000000000000000000',
+      channel: checkUpdate.includes('-') ? 'preview' : 'stable',
+      discoveredAt: new Date().toISOString(),
+      source: 'git-tag',
+      verifiedOfficialSource: true
+    }, {
+      installAuthority: 'delegated',
+      ownership: probe?.descriptor?.ownership ?? 'observe-only',
+      toolchain: { node: process.versions.node, pnpm: '11.19.0' },
+      knownInstallOrigin: true,
+      desktopManaged: false
+    });
+    console.log(JSON.stringify({ mode: 'check-update', version: checkUpdate, plan }, null, 2));
+    return plan.phase === 'staging' ? 0 : 1;
+  }
 
   const report = {
     mode: 'first-round-read-only',
@@ -79,12 +104,13 @@ async function main(): Promise<number> {
   };
 
   const snapshotStore = new SnapshotStore(join(stateDir, 'snapshots'));
+  const dshClient = new DshClient({ baseUrl: `http://127.0.0.1:${LEGACY_DSH_PORT}`, clientTag: 'supervisor-cli' });
   const supervisor = new Supervisor({
     stateDir,
     supervisorInstanceId: 'supervisor-cli',
     candidates
   });
-  await supervisor.start({ snapshotWriter: snapshotStore });
+  await supervisor.start({ snapshotWriter: snapshotStore, dshClient });
   await supervisor.runObserver();
   await supervisor.stop();
 

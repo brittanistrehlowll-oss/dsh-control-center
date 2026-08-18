@@ -10,11 +10,13 @@
     "build": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@dsh-control-center/dsh-client": "workspace:*",
     "@dsh-control-center/operation-journal": "workspace:*",
     "@dsh-control-center/runtime-discovery": "workspace:*",
     "@dsh-control-center/security": "workspace:*",
     "@dsh-control-center/snapshot-store": "workspace:*",
     "@dsh-control-center/supervisor-core": "workspace:*",
+    "@dsh-control-center/update-provider": "workspace:*",
     "@dsh-control-center/legacy-watchdog-adapter": "workspace:*"
   },
   "devDependencies": {

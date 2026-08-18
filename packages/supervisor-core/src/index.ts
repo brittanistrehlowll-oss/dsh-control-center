@@ -4,12 +4,17 @@ import { randomUUID } from 'node:crypto';
 import {
   LifecycleOperationSchema,
   nowIso,
+  type DiagnosticItem,
   type LifecycleOperation,
+  type QuotaSnapshot,
   type SurfaceSnapshot
 } from '@dsh-control-center/control-contract';
 import { OperationJournal } from '@dsh-control-center/operation-journal';
 import { RuntimeDiscovery, type DshProbeResult, type RuntimeCandidate } from '@dsh-control-center/runtime-discovery';
 import { redact, redactLogLine } from '@dsh-control-center/security';
+import { buildSummary, diagnose, type DiagnosticContext } from '@dsh-control-center/diagnostics';
+import { DshClient } from '@dsh-control-center/dsh-client';
+import { QuotaAdapter } from '@dsh-control-center/quota-adapter';
 
 /**
  * SupervisorCore — single instance, journal-authoritative control plane core.
@@ -56,6 +61,9 @@ export interface ObserverContext {
   snapshotUsable: boolean;
   journalHealthy: boolean;
   unfinished: LifecycleOperation[];
+  sessions: number;
+  quotaStates: QuotaSnapshot[];
+  diagnostics: DiagnosticItem[];
 }
 
 export type Observer = (ctx: ObserverContext) => Promise<void> | void;
@@ -155,6 +163,8 @@ export class Supervisor {
   private snapshotWriter: SnapshotWriter | undefined;
   private lifecycle: LifecyclePort | undefined;
   private lastProbe: DshProbeResult | undefined;
+  private dshClient: DshClient | undefined;
+  private quotaAdapters: QuotaAdapter[] = [];
 
   constructor(config: SupervisorConfig, env: SupervisorEnv = {}) {
     this.config = config;
@@ -168,7 +178,13 @@ export class Supervisor {
     return this.journal !== undefined;
   }
 
-  async start(options: { snapshotWriter?: SnapshotWriter; lifecycle?: LifecyclePort; observer?: Observer } = {}): Promise<SupervisorStartResult> {
+  async start(options: {
+    snapshotWriter?: SnapshotWriter;
+    lifecycle?: LifecyclePort;
+    observer?: Observer;
+    dshClient?: DshClient;
+    quotaAdapters?: QuotaAdapter[];
+  } = {}): Promise<SupervisorStartResult> {
     this.lock = await acquireSingleInstanceLock(this.stateDir, this.instanceId);
 
     // Journal recovery: initialize (reads operations.jsonl), then rebuild
@@ -179,6 +195,8 @@ export class Supervisor {
     this.snapshotWriter = options.snapshotWriter;
     this.lifecycle = options.lifecycle;
     this.observer = options.observer;
+    this.dshClient = options.dshClient;
+    this.quotaAdapters = options.quotaAdapters ?? [];
     this.discovery = new RuntimeDiscovery(this.config.candidates);
 
     if (this.observer) {
@@ -281,8 +299,11 @@ export class Supervisor {
     if (!this.discovery) return;
     const probe = await this.discovery.discover();
     this.lastProbe = probe;
+    const sessions = await this.readSessions();
+    const quota = await this.readQuotaStates();
+    const diagnostics = this.buildDiagnostics(probe, sessions, quota);
     if (this.snapshotWriter && probe) {
-      const snapshot = await this.buildSurfaceSnapshot(probe);
+      const snapshot = await this.buildSurfaceSnapshot(probe, { sessions, quota, diagnostics });
       try {
         await this.snapshotWriter.save(snapshot);
         await this.snapshotWriter.load(); // validate round-trip (last-good)
@@ -296,13 +317,74 @@ export class Supervisor {
         probe,
         snapshotUsable: this.snapshotWriter !== undefined,
         journalHealthy: this.journalHealthy,
-        unfinished: await this.journal.getUnfinishedOperations()
+        unfinished: await this.journal.getUnfinishedOperations(),
+        sessions: sessions.length,
+        quotaStates: quota,
+        diagnostics
       });
     }
   }
 
-  async buildSurfaceSnapshot(probe: DshProbeResult): Promise<SurfaceSnapshot> {
+  private async readSessions(): Promise<SurfaceSnapshot['recentSessions']> {
+    if (!this.dshClient) return [];
+    try {
+      const result = await this.dshClient.sessionList();
+      return result.sessions;
+    } catch (error) {
+      console.warn('[supervisor] session list unavailable:', redactLogLine(String(error)));
+      return [];
+    }
+  }
+
+  private async readQuotaStates(): Promise<QuotaSnapshot[]> {
+    if (this.quotaAdapters.length === 0) return [];
+    const results = await Promise.allSettled(this.quotaAdapters.map((adapter) => adapter.fetchQuota()));
+    return results.flatMap((result) => (result.status === 'fulfilled' ? [result.value] : []));
+  }
+
+  private buildDiagnostics(
+    probe: DshProbeResult | undefined,
+    sessions: SurfaceSnapshot['recentSessions'],
+    quotaStates: QuotaSnapshot[]
+  ): DiagnosticItem[] {
+    const dshVersion = probe?.health?.version ?? probe?.descriptor?.dshVersion;
+    const watchdogState = probe?.controller?.state;
+    const quotaState = quotaStates[0]?.state;
+    const ctx: DiagnosticContext = {
+      supervisorAlive: true,
+      supervisorInstanceId: this.instanceId,
+      ipcListening: false,
+      dshReachable: probe?.reachable ?? false,
+      dshReady: probe?.health?.ready ?? false,
+      ...(dshVersion !== undefined ? { dshVersion } : {}),
+      identityStrength: probe?.identity.strength ?? 'none',
+      ownershipKnown: probe?.descriptor?.ownership !== undefined,
+      watchdogResponding: probe?.controller !== undefined,
+      ...(watchdogState !== undefined ? { watchdogState } : {}),
+      port3080Open: probe?.reachable ?? false,
+      port3081Open: probe?.controller !== undefined,
+      ...(quotaState !== undefined ? { quotaState } : {}),
+      updateSourceVerified: false,
+      snapshotUsable: this.snapshotWriter !== undefined,
+      journalHealthy: this.journalHealthy,
+      permissionsOkay: true
+    };
+    return diagnose(ctx);
+  }
+
+  async buildSurfaceSnapshot(
+    probe: DshProbeResult,
+    extras: {
+      sessions?: SurfaceSnapshot['recentSessions'];
+      quota?: QuotaSnapshot[];
+      diagnostics?: DiagnosticItem[];
+    } = {}
+  ): Promise<SurfaceSnapshot> {
     const observedAt = this.now();
+    const sessions = extras.sessions ?? [];
+    const quota = extras.quota ?? [];
+    const diagnostics = extras.diagnostics ?? [];
+    const summary = buildSummary(diagnostics);
     const runtime = probe.descriptor
       ? {
           runtimeId: probe.descriptor.runtimeId,
@@ -327,13 +409,9 @@ export class Supervisor {
       generatedAt: observedAt,
       expiresAt: new Date(new Date(observedAt).getTime() + 60_000).toISOString(),
       runtime,
-      recentSessions: [],
-      quota: [],
-      diagnostics: {
-        generatedAt: observedAt,
-        items: [],
-        counts: { pass: 0, warn: 0, fail: 0, unknown: 0 }
-      },
+      recentSessions: sessions.slice(0, 5),
+      quota,
+      diagnostics: summary,
       source: {
         supervisorVersion: '0.1.0',
         contractVersion: 1,
