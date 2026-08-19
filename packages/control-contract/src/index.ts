@@ -345,6 +345,74 @@ export const RuntimeManifestSchema = z.object({
 }).strict();
 export type RuntimeManifest = z.infer<typeof RuntimeManifestSchema>;
 
+/**
+ * Telemetry events — the realtime surface broadcast (SSE / EventBus).
+ * The payload is redacted-safe by construction: no prompt/assistant/tool/
+ * credential content may ever be placed here (security package enforces).
+ */
+export const TelemetryEventSchema = z.object({
+  schemaVersion: z.literal(ContractVersion),
+  type: z.enum([
+    'state-changed',
+    'diagnostic-alert',
+    'quota-updated',
+    'operation-event'
+  ]),
+  timestamp: IsoDateTime,
+  runtimeId: NonEmptyString,
+  seq: z.number().int().positive(),
+  payload: z.record(z.unknown())
+}).strict();
+export type TelemetryEvent = z.infer<typeof TelemetryEventSchema>;
+
+/** Update manifest with Ed25519 signature for supply-chain verification. */
+export const UpdateManifestSchema = z.object({
+  version: NonEmptyString,
+  artifactUrl: z.string().url(),
+  sha256: z.string().regex(/^[0-9a-f]{64}$/i),
+  signatureBase64: NonEmptyString
+}).strict();
+export type UpdateManifest = z.infer<typeof UpdateManifestSchema>;
+
+/**
+ * Secure IPC protocol (protocol-first; Electron wiring lands in Checkpoint C).
+ * Channels are an allow-list; every request/response is schema-validated.
+ */
+export const IpcChannelSchema = z.enum([
+  'dsh:get-runtime-state',
+  'dsh:get-snapshot',
+  'dsh:lifecycle-action',
+  'dsh:telemetry-subscribe'
+]);
+export type IpcChannel = z.infer<typeof IpcChannelSchema>;
+
+export const LifecycleActionSchema = z.enum(['start', 'stop', 'restart']);
+export type LifecycleAction = z.infer<typeof LifecycleActionSchema>;
+
+export const IpcRequestSchema = z.object({
+  channel: IpcChannelSchema,
+  requestId: NonEmptyString,
+  payload: z.unknown().optional()
+}).strict();
+export type IpcRequest = z.infer<typeof IpcRequestSchema>;
+
+export const IpcResponseSchema = z.object({
+  channel: IpcChannelSchema,
+  requestId: NonEmptyString,
+  ok: z.boolean(),
+  result: z.unknown().optional(),
+  error: NonEmptyString.optional()
+}).strict();
+export type IpcResponse = z.infer<typeof IpcResponseSchema>;
+
+export const LifecycleActionPayloadSchema = z.object({
+  action: LifecycleActionSchema,
+  runtimeId: NonEmptyString,
+  idempotencyKey: NonEmptyString,
+  expectedProfileId: NonEmptyString.optional()
+}).strict();
+export type LifecycleActionPayload = z.infer<typeof LifecycleActionPayloadSchema>;
+
 export function nowIso(): string {
   return new Date().toISOString();
 }

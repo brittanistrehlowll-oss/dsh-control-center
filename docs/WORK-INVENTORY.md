@@ -59,6 +59,22 @@ sessions, redacted raw, snapshot written to temp state. Checkpoint B (Update Gat
 implemented: UpdateCoordinator with fail-closed real execution, full rollback matrix,
 canonical staging layout; supervisor snapshot wired with sessions/quota/diagnostics.
 
+### Post-review optimization modules (2026-08-18, design: docs/design/OPTIMIZATION-DESIGN.md)
+
+- `supervisor-core/src/crash-loop-policy.ts` — exponential backoff + jitter + circuit
+  breaker (CLOSED/OPEN/HALF_OPEN), injectable clock, `stats()`. 5 tests.
+- `supervisor-core/src/event-bus.ts` — typed non-singleton telemetry bus, bounded ring
+  buffer history, wildcard/specific subscribe. 4 tests.
+- `supervisor-core/src/ipc-protocol.ts` — secure IPC protocol layer (channel allow-list,
+  request/response validation, lifecycle mutation guard). Electron wiring lands in
+  Checkpoint C. 5 tests.
+- `apps/supervisor/src/sse.ts` — typed SSE endpoint (replay + heartbeat + cleanup);
+  `--serve-events` mode on 127.0.0.1:3989.
+- `snapshot-store/src/compactor.ts` — safe compaction (atomic Windows write, contract-
+  validated base + SHA-256, advisory journal checkpoint, journal never truncated). 4 tests.
+- `update-provider/src/verifier.ts` — Ed25519 + SHA-256 verification, Zod update manifest,
+  fail-closed key/signature. 5 tests.
+
 ### Missing (this session's work)
 
 - `packages/security` implementation (redaction helpers, secret detection, safe IPC framing).

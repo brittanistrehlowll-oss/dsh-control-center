@@ -16,17 +16,19 @@
  *   pnpm --filter @dsh-control-center/supervisor start -- --state-dir <dir>
  */
 import { mkdtemp } from 'node:fs/promises';
+import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { SnapshotStore } from '@dsh-control-center/snapshot-store';
 import { RuntimeDiscovery } from '@dsh-control-center/runtime-discovery';
-import { Supervisor } from '@dsh-control-center/supervisor-core';
+import { Supervisor, EventBus } from '@dsh-control-center/supervisor-core';
 import { DshClient } from '@dsh-control-center/dsh-client';
 import { UpdateCoordinator } from '@dsh-control-center/update-provider';
 import { FileGateway } from '@dsh-control-center/legacy-watchdog-adapter';
 import { LEGACY_CONTROLLER_PORT, LEGACY_DSH_PORT } from '@dsh-control-center/legacy-watchdog-adapter';
+import { handleSseConnection } from './sse.js';
 
-function parseArgs(): { stateDir: string; dshLogsDir: string; checkUpdate: string | undefined } {
+function parseArgs(): { stateDir: string; dshLogsDir: string; checkUpdate: string | undefined; serveEvents: boolean } {
   const args = process.argv.slice(2);
   const get = (flag: string) => {
     const index = args.indexOf(flag);
@@ -35,14 +37,15 @@ function parseArgs(): { stateDir: string; dshLogsDir: string; checkUpdate: strin
   return {
     stateDir: get('--state-dir') ?? join(tmpdir(), 'dsh-control-center', 'state'),
     dshLogsDir: get('--dsh-logs-dir') ?? join(process.cwd(), 'logs'),
-    checkUpdate: get('--check-update')
+    checkUpdate: get('--check-update'),
+    serveEvents: args.includes('--serve-events')
   };
 }
 
 const INSPECT_REPORT = 'dsh-control-center:inspect-report.json';
 
 async function main(): Promise<number> {
-  const { stateDir, dshLogsDir, checkUpdate } = parseArgs();
+  const { stateDir, dshLogsDir, checkUpdate, serveEvents } = parseArgs();
 
   // Candidates: legacy-watchdog source via the real controller.
   const candidates = [{
@@ -105,13 +108,40 @@ async function main(): Promise<number> {
 
   const snapshotStore = new SnapshotStore(join(stateDir, 'snapshots'));
   const dshClient = new DshClient({ baseUrl: `http://127.0.0.1:${LEGACY_DSH_PORT}`, clientTag: 'supervisor-cli' });
+  const eventBus = new EventBus();
   const supervisor = new Supervisor({
     stateDir,
     supervisorInstanceId: 'supervisor-cli',
     candidates
   });
-  await supervisor.start({ snapshotWriter: snapshotStore, dshClient });
+  await supervisor.start({ snapshotWriter: snapshotStore, dshClient, eventBus });
   await supervisor.runObserver();
+
+  // Optional realtime SSE surface (read-only, no lifecycle):
+  //   GET /events -> text/event-stream (history replay + live + heartbeat)
+  if (serveEvents) {
+    const server = createServer((req, res) => {
+      const url = new URL(req.url ?? '/', 'http://127.0.0.1');
+      if (url.pathname === '/events' && req.method === 'GET') {
+        handleSseConnection({ res, eventBus });
+        return;
+      }
+      if (url.pathname === '/healthz') {
+        res.writeHead(200, { 'content-type': 'application/json' });
+        res.end(JSON.stringify({ ok: true, worker: process.pid }));
+        return;
+      }
+      res.writeHead(404, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({ error: 'not found' }));
+    });
+    const port = Number(process.env.DSH_CC_EVENTS_PORT ?? '3989');
+    await new Promise<void>((resolve) => server.listen(port, '127.0.0.1', resolve));
+    console.log(`[supervisor] SSE events on http://127.0.0.1:${port}/events`);
+    process.on('SIGINT', () => { void supervisor.stop().then(() => process.exit(0)); });
+    process.on('SIGTERM', () => { void supervisor.stop().then(() => process.exit(0)); });
+    await new Promise<void>(() => { /* keep serving until killed */ });
+  }
+
   await supervisor.stop();
 
   const { writeFile } = await import('node:fs/promises');

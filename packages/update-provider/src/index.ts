@@ -8,6 +8,8 @@ import {
 } from '@dsh-control-center/control-contract';
 
 export { UpdateCoordinator, STAGING_ROOT } from './coordinator.js';
+export { UpdateVerifier } from './verifier.js';
+export type { KeyProvider, VerifyResult } from './verifier.js';
 export type {
   StagedRuntime,
   UpdateContext,

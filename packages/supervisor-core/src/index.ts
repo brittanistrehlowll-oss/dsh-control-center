@@ -15,6 +15,7 @@ import { redact, redactLogLine } from '@dsh-control-center/security';
 import { buildSummary, diagnose, type DiagnosticContext } from '@dsh-control-center/diagnostics';
 import { DshClient } from '@dsh-control-center/dsh-client';
 import { QuotaAdapter } from '@dsh-control-center/quota-adapter';
+import { EventBus } from './event-bus.js';
 
 /**
  * SupervisorCore — single instance, journal-authoritative control plane core.
@@ -165,6 +166,7 @@ export class Supervisor {
   private lastProbe: DshProbeResult | undefined;
   private dshClient: DshClient | undefined;
   private quotaAdapters: QuotaAdapter[] = [];
+  private eventBus: EventBus | undefined;
 
   constructor(config: SupervisorConfig, env: SupervisorEnv = {}) {
     this.config = config;
@@ -184,6 +186,7 @@ export class Supervisor {
     observer?: Observer;
     dshClient?: DshClient;
     quotaAdapters?: QuotaAdapter[];
+    eventBus?: EventBus;
   } = {}): Promise<SupervisorStartResult> {
     this.lock = await acquireSingleInstanceLock(this.stateDir, this.instanceId);
 
@@ -197,6 +200,7 @@ export class Supervisor {
     this.observer = options.observer;
     this.dshClient = options.dshClient;
     this.quotaAdapters = options.quotaAdapters ?? [];
+    this.eventBus = options.eventBus;
     this.discovery = new RuntimeDiscovery(this.config.candidates);
 
     if (this.observer) {
@@ -323,6 +327,23 @@ export class Supervisor {
         diagnostics
       });
     }
+
+    // Broadcast a redacted state-changed event to any SSE/EventBus subscriber.
+    if (this.eventBus && probe?.descriptor) {
+      this.eventBus.publish({
+        type: 'state-changed',
+        runtimeId: probe.descriptor.runtimeId,
+        payload: {
+          reachable: probe.reachable,
+          protocolValid: probe.protocolValid,
+          identityStrength: probe.identity.strength,
+          ready: probe.health?.ready ?? false,
+          state: probe.health?.ready ? 'running' : 'starting',
+          ...(sessions.length > 0 ? { sessions: sessions.length } : {}),
+          ...(quota[0]?.state ? { quotaState: quota[0].state } : {})
+        }
+      });
+    }
   }
 
   private async readSessions(): Promise<SurfaceSnapshot['recentSessions']> {
@@ -430,6 +451,13 @@ export async function ensureStateLayout(stateDir: string): Promise<void> {
 
 export { OperationJournal };
 export { RuntimeDiscovery };
+export { EventBus } from './event-bus.js';
+export { CrashLoopController } from './crash-loop-policy.js';
+export type { CrashLoopConfig, FailureAdvice, CircuitState } from './crash-loop-policy.js';
+export type { EventBusOptions, TelemetryListener } from './event-bus.js';
+export { IpcProtocol } from './ipc-protocol.js';
+export type { IpcHandlers, MutationGuard } from './ipc-protocol.js';
+export { IpcChannelSchema, IpcRequestSchema, IpcResponseSchema, LifecycleActionPayloadSchema } from './ipc-protocol.js';
 
 export function redactForLog(value: unknown): unknown {
   return redact(value);
