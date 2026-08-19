@@ -95,6 +95,40 @@ export function apply(ctx, config) {
     });
     disposers.push(ds);
 
+    // ———— /api/jingxi/update-check · update-apply（Update Core，check-only P0）————
+    const uc = ctx.webServer.register({
+      kind: 'exact',
+      path: '/api/jingxi/update-check',
+      handler: async (req, res) => {
+        if (req.method !== 'POST') {
+          res.writeHead(405, { 'content-type': 'application/json' });
+          res.end(JSON.stringify({ ok: false, error: 'method not allowed' }));
+          return;
+        }
+        try {
+          // P0 check-only：官方源固定 deepseek-ai/deepseek-harness；
+          // 真实 latest 查询由 Update Core 提供（Gate 7 接 executor）。
+          res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' });
+          res.end(JSON.stringify({ ok: true, current: '0.1.0-rc.7', latest: null, message: '当前已是最新版本', checkedAt: new Date().toISOString() }));
+        } catch (e) {
+          res.writeHead(500, { 'content-type': 'application/json' });
+          res.end(JSON.stringify({ ok: false, error: String(e) }));
+        }
+      }
+    });
+    disposers.push(uc);
+
+    const ua = ctx.webServer.register({
+      kind: 'exact',
+      path: '/api/jingxi/update-apply',
+      handler: async (req, res) => {
+        // Gate 7 前 fail-closed：真实 apply 未启用
+        res.writeHead(200, { 'content-type': 'application/json' });
+        res.end(JSON.stringify({ ok: false, error: 'update apply not enabled (Gate 7)', blocked: true }));
+      }
+    });
+    disposers.push(ua);
+
     // ———— 注入客户端脚本 ————
     const clientScript = buildClientScript({ whaleIconPath: '/plugins/jingxi/assets/whale-breath-icon.svg' });
     const dt = ctx.webServer.tapIndex((html) =>
@@ -145,7 +179,16 @@ function buildClientScript(opts) {
 
   function openJingxiConsole() {
     const url = location.origin + '/jingxi';
-    if (location.pathname !== '/jingxi') location.href = url;
+    if (location.pathname !== '/jingxi') { location.href = url; return; }
+    // 已在 /jingxi：动态加载控制台模块并渲染
+    import('/plugins/jingxi/jingxi-console.mjs')
+      .then((mod) => { window.__JX_QUOTA_STORE__ = quotaStore; mod.openJingxiConsole(); })
+      .catch(() => {
+        const hint = document.createElement('div');
+        hint.style.cssText = 'padding:20px;text-align:center;color:var(--dsw-alias-text-tertiary,#868a91)';
+        hint.textContent = '鲸息控制台模块加载失败（/plugins/jingxi/jingxi-console.mjs）';
+        document.body.prepend(hint);
+      });
   }
 
   async function lifecycle(action) {
@@ -187,9 +230,13 @@ function buildClientScript(opts) {
     }, 500);
   }
 
-  // ———— 挂载 SidebarDock ————
+  // ———— 挂载 SidebarDock + /jingxi 路由 ————
   function mount() {
     if (document.getElementById('jx-sidebar-dock')) return;
+    // /jingxi 路径：直接渲染鲸息控制台
+    if (location.pathname === '/jingxi') {
+      openJingxiConsole();
+    }
     // 动态 import 侧栏模块（服务端注入为模块脚本时可用）
     import('/plugins/jingxi/sidebar-dock.mjs').then((mod) => {
       mod.mountSidebarDock({
