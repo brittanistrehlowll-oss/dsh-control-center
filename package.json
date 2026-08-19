@@ -19,6 +19,10 @@
     "scan:path": "node scripts/scan-paths.mjs",
     "verify:contract": "node scripts/verify-contract.mjs",
     "hash:artifacts": "node scripts/hash-artifacts.mjs",
+    "install:detect": "node scripts/install.mjs detect",
+    "install:run": "node scripts/install.mjs install",
+    "install:uninstall": "node scripts/install.mjs uninstall",
+    "install:healthcheck": "node scripts/install.mjs healthcheck",
     "dev:surface": "pnpm --filter @dsh-control-center/control-surface dev",
     "dev:supervisor": "pnpm --filter @dsh-control-center/supervisor dev"
   },

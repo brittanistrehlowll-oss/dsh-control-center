@@ -1,40 +1,37 @@
 # DSH Control Center
 
-Windows-first control plane for a locally installed **DeepSeek Harness (DSH)**.
+**V2 定位（2026-08-19 起）：薄整合层 / meta-package（installer）** —— 不是独立监控后台。
 
-V1.1 keeps the existing **Legacy Watchdog** (`dsh-controller` on
-`127.0.0.1:3081` + external watchdog script) as the DSH process owner. Control
-Center is a **Supervisor + Control Plane**: discovery, read-only health,
-operation journal, crash recovery, redacted snapshots, diagnostics, update
-preflight, and (behind gates) a thin Electron shell. It never modifies the DSH
-runtime or the existing plugin repositories.
+V2 的运行时职责由两个插件仓库承担：**dsh-lifecycle**（左下角控制条：额度摘要 +
+重启/关闭 + takeover overlay + 关闭后极简启动页 :3081）和 **dsh-quota-panel**
+（额度 capsule/卡片）。本仓库只负责：
 
-> Status: V1.1 implementation in progress. **Checkpoint A** is the current gate.
-> Pilot builds are unsigned until a Windows code-signing certificate exists.
+```
+检测 DSH → 安装 dsh-quota-panel + dsh-lifecycle → 写统一配置
+→ 安装/启动 Watchdog → 升级 / 卸载 / 健康检查
+```
 
-## What makes this different from a naive wrapper
+> 权威基线：`docs/V2-DIRECTION.md`（源自 Google Drive `00_FINAL_READ_FIRST｜20260819-V2`）。
+> V1 的 "Supervisor-first Control Plane / Monitoring Center" 方向已降级为历史
+> （代码保留作 research，不继续扩张，不以它为 UI 依赖）。
 
-Every protocol assumption in this repo was **verified against a live
-`0.1.0-rc.7` DSH** (2026-08-18), not copied from docs:
+用户感知三件事：**① 我还有多少额度 ② 我能快速重启/关闭 DSH ③ DSH 关闭后我总有
+一个稳定页面能重新打开它。**
 
-| Real DSH surface | Shape | Used for |
-|---|---|---|
-| `GET :3080/api/system/health` | `{ok, ready, bootId, pid, uptime, …}` | DSH discriminator + per-boot restart evidence |
-| `GET :3081/api/status` | `{state, bootId, pid, uptime, instanceId}` | Legacy controller corroboration |
-| `POST :3080/api/session.list` | RPC envelope → `server-response` | Read-only recent sessions |
-| `GET :3080/` | HTML with `window.__DSH_BOOT__.rev` | Boot-leak check (rev is NOT per-boot) |
+## 历史保留（V1 research 代码）
 
-There is **no** `/__dsh/control/fingerprint` — earlier drafts assumed one; the
-code now probes what DSH actually answers.
+V1 构建的 Supervisor / Contract / Snapshot / Diagnostics / SSE / 更新验签等代码
+保留在本仓库 `packages/*`、`apps/supervisor` 中供研究，**不再扩张**。它们验证过
+真实 DSH 协议（`/api/system/health` + bootId、`:3081` controller、RPC
+`session.list`），对理解 DSH 运行时仍有价值。
 
-## Non-goals (V1.1)
+## Non-goals (V2)
 
-- No `OwnedRuntimeAdapter` — no direct process ownership.
-- No process killing / arbitrary port takeover.
-- No modification of the DSH runtime or the three legacy plugin repos
-  (`dsh-lifecycle`, `dsh-quota-panel`, `dsh-pet-shura`).
-- No database; snapshots are flat JSON files.
-- No prompt/assistant/tool/shell/credential content ever persisted or rendered.
+- 不建设 Monitoring Center / 多页控制台 / Diagnostics Dashboard
+- 不建设 Electron 壳 / 独立 React Dashboard（作为产品）
+- 不为最近会话引入数据库
+- 不直接杀进程 / 不接管 DSH 生命周期（仍走 marker/watchdog）
+- 不在 Codex 会话内真实 stop/restart DSH（只允许 dry-run/检测）
 
 ## Workspace
 
