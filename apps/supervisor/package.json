@@ -10,6 +10,7 @@
     "build": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@dsh-control-center/diagnostics": "workspace:*",
     "@dsh-control-center/dsh-client": "workspace:*",
     "@dsh-control-center/operation-journal": "workspace:*",
     "@dsh-control-center/runtime-discovery": "workspace:*",

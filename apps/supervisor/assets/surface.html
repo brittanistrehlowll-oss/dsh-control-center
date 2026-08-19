@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>DSH Control Center</title>
+<style>
+  :root {
+    --bg: #0f1420; --panel: #171e2e; --panel2: #1e2740;
+    --text: #e6edf7; --muted: #8a97b0; --line: #2a3450;
+    --green: #2ecc71; --amber: #f1c40f; --red: #e74c3c; --blue: #4a9eff; --gray: #7f8c8d;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', 'Microsoft YaHei', system-ui, sans-serif; padding: 24px; }
+  header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+  header h1 { font-size: 20px; font-weight: 600; }
+  .badge { font-size: 12px; padding: 4px 10px; border-radius: 20px; background: var(--panel2); color: var(--muted); border: 1px solid var(--line); }
+  .live { color: var(--green); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
+  .card h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 12px; }
+  .row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px dashed var(--line); font-size: 13px; }
+  .row:last-child { border-bottom: none; }
+  .row .k { color: var(--muted); }
+  .row .v { font-weight: 500; word-break: break-all; text-align: right; }
+  .pill { padding: 4px 12px; border-radius: 16px; font-size: 12px; font-weight: 600; }
+  .pill.running { background: rgba(46,204,113,.15); color: var(--green); }
+  .pill.stopped { background: rgba(231,76,60,.15); color: var(--red); }
+  .pill.starting { background: rgba(241,196,15,.15); color: var(--amber); }
+  .pill.unknown { background: rgba(127,140,141,.15); color: var(--gray); }
+  .dot { display: inline-flex; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; }
+  .dot.green { background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .dot.red { background: var(--red); box-shadow: 0 0 8px var(--red); }
+  .dot.gray { background: var(--gray); }
+  .dot.amber { background: var(--amber); box-shadow: 0 0 8px var(--amber); }
+  #events { max-height: 260px; overflow-y: auto; font-family: 'Cascadia Code', Consolas, monospace; font-size: 11.5px; line-height: 1.6; }
+  #events .ev { border-bottom: 1px dashed var(--line); padding: 3px 0; color: var(--muted); }
+  #events .ev b { color: var(--text); }
+  #events .ev .ts { color: var(--gray); margin-right: 8px; }
+  .mono { font-family: 'Cascadia Code', Consolas, monospace; font-size: 12px; }
+  .statusline { display:flex; align-items:center; gap:8px; font-size:13px; }
+  .stat { color: var(--green); }
+  .warn { color: var(--amber); }
+  .fail { color: var(--red); }
+  .foot { margin-top: 20px; color: var(--muted); font-size: 12px; text-align: center; }
+  .muted { color: var(--muted); }
+</style>
+</head>
+<body>
+<header>
+  <h1>🛰️ DSH Control Center</h1>
+  <span class="badge">Supervisor · <span id="svInst">连接中…</span></span>
+  <span class="badge"><span class="dot green" id="sseDot"></span>实时流 <span id="sseState">连接中</span></span>
+</header>
+
+<div class="grid">
+  <!-- ① DSH 运行状态 -->
+  <div class="card">
+    <h2>① DSH Runtime</h2>
+    <div class="row"><span class="k">运行状态</span><span class="v"><span class="pill" id="statePill">…</span></span></div>
+    <div class="row"><span class="k">Ready</span><span class="v mono" id="ready">…</span></div>
+    <div class="row"><span class="k">bootId</span><span class="v mono" id="bootId">…</span></div>
+    <div class="row"><span class="k">PID</span><span class="v mono" id="pid">…</span></div>
+    <div class="row"><span class="k">身份强度</span><span class="v" id="identity">…</span></div>
+    <div class="row"><span class="k">协议验证</span><span class="v" id="protocol">…</span></div>
+    <div class="row"><span class="k">最近会话数</span><span class="v mono" id="sessions">…</span></div>
+  </div>
+
+  <!-- ② 身份与所有权 -->
+  <div class="card">
+    <h2>② Identity &amp; Ownership</h2>
+    <div class="row"><span class="k">Ownership</span><span class="v" id="ownership">…</span></div>
+    <div class="row"><span class="k">Identity 值</span><span class="v mono" id="identityVal">…</span></div>
+    <div class="row"><span class="k">controller 状态</span><span class="v" id="controllerState">…</span></div>
+    <div class="row"><span class="k">更新源验证</span><span class="v" id="updateSrc">…</span></div>
+    <div class="row"><span class="k">安装权限</span><span class="v" id="installAuth">…</span></div>
+  </div>
+
+  <!-- ③ 诊断 -->
+  <div class="card">
+    <h2>③ 诊断 Diagnostics</h2>
+    <div class="statline" style="margin-bottom:10px">
+      <span class="stat">● PASS <span id="cPass">0</span></span>
+      <span class="warn">● WARN <span id="cWarn">0</span></span>
+      <span class="fail">● FAIL <span id="cFail">0</span></span>
+      <span class="muted">● UNKNOWN <span id="cUnknown">0</span></span>
+    </div>
+    <div id="diagnostics" style="font-size:12px"></div>
+  </div>
+
+  <!-- ④ 额度 -->
+  <div class="card">
+    <h2>④ 额度 Quota</h2>
+    <div id="quota" class="muted" style="font-size:13px">暂无额度数据</div>
+  </div>
+</div>
+
+<!-- ⑤ 事件流 -->
+<div class="card" style="margin-top:16px">
+  <h2>⑤ 实时遥测事件流 <span class="muted" style="text-transform:none; letter-spacing:0">(SSE · 最近事件)</span></h2>
+  <div id="events"><div class="ev">等待事件…</div></div>
+</div>
+
+<div class="foot">DSH Control Center · 只读监控 · 关闭本页面不影响 DSH 运行</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const eventLog = $('events');
+
+function setState(state) {
+  const pill = $('statePill');
+  const map = { running: ['running', 'running'], starting: ['starting', 'starting'], stopped: ['stopped', 'stopped'], unknown: ['unknown', 'unknown'] };
+  const [key, label] = map[state] || map.unknown;
+  pill.className = 'pill ' + key;
+  pill.textContent = state;
+}
+
+function renderStatus(s) {
+  if (!s) return;
+  setState(s.state || 'unknown');
+  $('ready').textContent = s.ready === true ? '✅ 是' : '❌ 否';
+  $('bootId').textContent = s.bootId || '—';
+  $('pid').textContent = s.pid || '—';
+  $('identity').textContent = s.identityStrength || '—';
+  $('protocol').textContent = s.protocolValid === true ? '✅ 有效' : '❌ 无效';
+  $('sessions').textContent = s.sessions ?? '—';
+  $('ownership').textContent = s.ownership || '—';
+  $('identityVal').textContent = (s.identityValue || '—').slice(0, 24);
+  $('controllerState').textContent = s.controllerState || '—';
+  $('updateSrc').textContent = s.updateSourceVerified ? '✅ 已验证' : '—';
+  $('installAuth').textContent = s.installAuthority || '—';
+  // identity dot
+  const id = s.identityStrength;
+  $('identity').innerHTML = id === 'strong' ? '<span class="dot green"></span>strong'
+    : id === 'weak' ? '<span class="dot amber"></span>weak'
+    : '<span class="dot red"></span>' + (id || 'none');
+  $('protocol').innerHTML = s.protocolValid === true ? '<span class="dot green"></span>有效' : '<span class="dot red"></span>无效';
+}
+
+function appendEvent(ev) {
+  const row = document.createElement('div');
+  row.className = 'ev';
+  const ts = (ev.timestamp || '').replace('T', ' ').slice(5, 19);
+  row.innerHTML = `<span class="ts">${ts}</span><b>${ev.type}</b> · ${ev.runtimeId} · <span>${JSON.stringify(ev.payload || {}).slice(0, 120)}</span>`;
+  eventLog.prepend(row);
+  while (eventLog.children.length > 60) eventLog.removeChild(eventLog.lastChild);
+}
+
+function renderDiagnostics(summary) {
+  if (!summary) return;
+  $('cPass').textContent = summary.counts?.pass ?? 0;
+  $('cWarn').textContent = summary.counts?.warn ?? 0;
+  $('cFail').textContent = summary.counts?.fail ?? 0;
+  $('cUnknown').textContent = summary.counts?.unknown ?? 0;
+  const box = $('diagnostics');
+  box.innerHTML = '';
+  const items = summary.items || [];
+  const bad = items.filter(i => i.status === 'FAIL').concat(items.filter(i => i.status === 'WARN'));
+  const shown = bad.length > 0 ? bad.slice(0, 6) : (items || []).slice(0, 6);
+  shown.forEach(i => {
+    const cls = i.status === 'PASS' ? 'stat' : i.status === 'WARN' ? 'warn' : i.status === 'FAIL' ? 'fail' : 'muted';
+    const line = document.createElement('div');
+    line.className = 'row';
+    line.innerHTML = `<span class="k">${i.title || i.id}</span><span class="v ${cls}">${i.status}</span>`;
+    box.appendChild(line);
+  });
+}
+
+function renderQuota(q) {
+  const box = $('quota');
+  if (!q || q.length === 0) { box.textContent = '暂无额度数据'; return; }
+  box.innerHTML = '';
+  q.forEach(item => {
+    const line = document.createElement('div');
+    line.className = 'row';
+    const stateCls = item.state === 'ok' ? 'stat' : item.state === 'warn' || item.state === 'critical' ? 'warn' : 'muted';
+    const metrics = (item.metrics || []).map(m => `${m.kind === 'balance' ? '余额' : '用量'} ${m.value}${m.unit}`).join(' · ');
+    line.innerHTML = `<span class="k">${item.providerId}</span><span class="v"><span class="${stateCls}">${item.state}</span> · <span class="mono">${metrics}</span></span>`;
+    box.appendChild(line);
+  });
+}
+
+// 初始加载当前状态
+fetch('/api/status').then(r => r.json()).then(data => {
+  if (data.supervisor) $('svInst').textContent = data.supervisor;
+  renderStatus(data.runtime);
+  renderDiagnostics(data.diagnostics);
+  renderQuota(data.quota);
+  (data.events || []).forEach(appendEvent);
+}).catch(() => { $('svInst').textContent = '不可达'; });
+
+// SSE 实时流
+const es = new EventSource('/events');
+const dot = $('sseDot');
+es.onopen = () => { dot.className = 'dot green'; $('sseState').textContent = '已连接'; };
+es.onerror = () => { dot.className = 'dot red'; $('sseState').textContent = '重连中…'; };
+es.onmessage = (e) => {
+  try {
+    const ev = JSON.parse(e.data);
+    appendEvent(ev);
+    if (ev.type === 'state-changed' && ev.payload) {
+      setState(ev.payload.state || 'unknown');
+      $('ready').textContent = ev.payload.ready === true ? '✅ 是' : '❌ 否';
+      if (ev.payload.bootId) $('bootId').textContent = ev.payload.bootId;
+      if (ev.payload.pid) $('pid').textContent = ev.payload.pid;
+      if (ev.payload.identityStrength) $('identity').innerHTML = ev.payload.identityStrength === 'strong' ? '<span class="dot green"></span>strong' : '<span class="dot amber"></span>weak';
+      if (ev.payload.sessions != null) $('sessions').textContent = ev.payload.sessions;
+    }
+  } catch {}
+};
+</script>
+</body>
+</html>

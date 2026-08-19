@@ -60,6 +60,9 @@ importers:
 
   apps/supervisor:
     dependencies:
+      '@dsh-control-center/diagnostics':
+        specifier: workspace:*
+        version: link:../../packages/diagnostics
       '@dsh-control-center/dsh-client':
         specifier: workspace:*
         version: link:../../packages/dsh-client

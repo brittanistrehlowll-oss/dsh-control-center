@@ -27,6 +27,7 @@ import { UpdateCoordinator } from '@dsh-control-center/update-provider';
 import { FileGateway } from '@dsh-control-center/legacy-watchdog-adapter';
 import { LEGACY_CONTROLLER_PORT, LEGACY_DSH_PORT } from '@dsh-control-center/legacy-watchdog-adapter';
 import { handleSseConnection } from './sse.js';
+import { buildSurfaceStatus, json, surfaceHtml } from './surface.js';
 
 function parseArgs(): { stateDir: string; dshLogsDir: string; checkUpdate: string | undefined; serveEvents: boolean } {
   const args = process.argv.slice(2);
@@ -117,26 +118,49 @@ async function main(): Promise<number> {
   await supervisor.start({ snapshotWriter: snapshotStore, dshClient, eventBus });
   await supervisor.runObserver();
 
-  // Optional realtime SSE surface (read-only, no lifecycle):
-  //   GET /events -> text/event-stream (history replay + live + heartbeat)
+  // Optional realtime surface (read-only monitoring dashboard):
+  //   GET /            → the monitoring web page
+  //   GET /api/status  → current snapshot as JSON
+  //   GET /events      → SSE telemetry stream
+  //   GET /healthz     → liveness
   if (serveEvents) {
-    const server = createServer((req, res) => {
+    const server = createServer(async (req, res) => {
       const url = new URL(req.url ?? '/', 'http://127.0.0.1');
-      if (url.pathname === '/events' && req.method === 'GET') {
+      const pathname = url.pathname;
+      if (pathname === '/' && req.method === 'GET') {
+        const html = await surfaceHtml();
+        res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
+        res.end(html);
+        return;
+      }
+      if (pathname === '/api/status' && req.method === 'GET') {
+        const statusArgs: Parameters<typeof buildSurfaceStatus>[0] = {
+          supervisor,
+          eventBus,
+          installAuthority: 'delegated',
+          updateSourceVerified: false,
+          ...(probe?.descriptor?.dshVersion ? { dshVersion: probe.descriptor.dshVersion } : {}),
+          ...(probe?.controller?.state ? { controllerState: probe.controller.state } : {})
+        };
+        const status = await buildSurfaceStatus(statusArgs);
+        json(res, 200, status);
+        return;
+      }
+      if (pathname === '/events' && req.method === 'GET') {
         handleSseConnection({ res, eventBus });
         return;
       }
-      if (url.pathname === '/healthz') {
-        res.writeHead(200, { 'content-type': 'application/json' });
-        res.end(JSON.stringify({ ok: true, worker: process.pid }));
+      if (pathname === '/healthz') {
+        json(res, 200, { ok: true, worker: process.pid });
         return;
       }
-      res.writeHead(404, { 'content-type': 'application/json' });
-      res.end(JSON.stringify({ error: 'not found' }));
+      json(res, 404, { error: 'not found' });
     });
     const port = Number(process.env.DSH_CC_EVENTS_PORT ?? '3989');
     await new Promise<void>((resolve) => server.listen(port, '127.0.0.1', resolve));
-    console.log(`[supervisor] SSE events on http://127.0.0.1:${port}/events`);
+    console.log(`[supervisor] Control Center dashboard: http://127.0.0.1:${port}/`);
+    console.log(`[supervisor] SSE telemetry:            http://127.0.0.1:${port}/events
+    `);
     process.on('SIGINT', () => { void supervisor.stop().then(() => process.exit(0)); });
     process.on('SIGTERM', () => { void supervisor.stop().then(() => process.exit(0)); });
     await new Promise<void>(() => { /* keep serving until killed */ });
