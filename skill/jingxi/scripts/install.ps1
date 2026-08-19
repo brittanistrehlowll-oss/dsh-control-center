@@ -70,17 +70,17 @@ if (Test-Path $patchPath) {
   if ($patch -match 'jingxi') {
     Ok "web profile 已注册 jingxi（幂等）"
   } else {
-    # 先部署插件文件
-    $pluginSrc = Join-Path $repoRoot 'packages\jingxi-plugin\src\index.mjs'
+    # 部署插件（整个 src 目录：index + sidebar-dock + whale-breath-icon）
+    $pluginSrcDir = Join-Path $repoRoot 'packages\jingxi-plugin\src'
     $pluginsDir = Join-Path $profileDir 'plugins'
-    New-Item -ItemType Directory -Force -Path $pluginsDir | Out-Null
-    if (Test-Path $pluginSrc) {
-      Copy-Item $pluginSrc (Join-Path $pluginsDir 'jingxi-plugin.mjs') -Force
-      $patch += "`n# jingxi plugin (installed by jingxi skill)`n- insert:`n    - id: jingxi-plugin`n      name: './plugins/jingxi-plugin.mjs'`n      inject: [webServer]`n"
+    New-Item -ItemType Directory -Force -Path (Join-Path $pluginsDir 'jingxi') | Out-Null
+    if (Test-Path $pluginSrcDir) {
+      Copy-Item -Path (Join-Path $pluginSrcDir '*') -Destination (Join-Path $pluginsDir 'jingxi') -Recurse -Force
+      $patch += "`n# jingxi plugin (installed by jingxi skill)`n- insert:`n    - id: jingxi-plugin`n      name: './plugins/jingxi/index.mjs'`n      inject: [webServer]`n"
       Set-Content -Path $patchPath -Value $patch -Encoding UTF8
-      Ok "jingxi 插件条目已写入 cordis.patch.yml + 插件文件已部署"
+      Ok "jingxi 插件目录已部署（plugins/jingxi/）+ cordis.patch.yml 条目已写入"
     } else {
-      Warn "packages/jingxi-plugin/src/index.mjs 不存在（跳过插件注册，后续 Gate 补齐）"
+      Warn "packages/jingxi-plugin/src 不存在（跳过插件注册，后续 Gate 补齐）"
     }
   }
 } else {

@@ -32,8 +32,8 @@ Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Continue'
 
 if (-not $DshRoot) { $DshRoot = 'D:\CodexD\DSH' }
-$home = Join-Path $DshRoot 'home'
-$jxHome = Join-Path $home 'jingxi'
+$dshHomeDir = Join-Path $DshRoot 'home'
+$jxHome = Join-Path $dshHomeDir 'jingxi'
 $statePath = Join-Path $jxHome 'state'
 $logsPath  = Join-Path $jxHome 'logs'
 $launcher  = Join-Path $DshRoot 'Start-DSH-Web-Detached.ps1'
