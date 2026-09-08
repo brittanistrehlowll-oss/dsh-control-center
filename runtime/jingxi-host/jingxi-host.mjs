@@ -40,7 +40,7 @@ const DSH_HEALTH = `${DSH_URL}/api/system/health`;
 
 // ———— 参数：--dsh-root <dir> ————
 const argIdx = process.argv.indexOf('--dsh-root');
-const DSH_ROOT = argIdx >= 0 ? process.argv[argIdx + 1] : 'D:\\CodexD\\DSH';
+const DSH_ROOT = argIdx >= 0 ? process.argv[argIdx + 1] : 'C:\\Users\\wx\\.dsh-install';
 
 const HOME = path.join(DSH_ROOT, 'home');
 const JX_HOME = path.join(HOME, 'jingxi');

@@ -5,11 +5,11 @@
 [CmdletBinding()]
 param(
   [string]$DshHome = $env:DSH_HOME,
-  [string]$RepoPath = "D:\CodexD\dsh-control-center"   # 本地鲸息源仓库
+  [string]$RepoPath = "C:\Users\wx\dsh-control-center"   # 本地鲸息源仓库
 )
 
 $ErrorActionPreference = 'Stop'
-if (-not $DshHome) { $DshHome = "D:\CodexD\DSH\home" }
+if (-not $DshHome) { $DshHome = "C:\Users\wx\.dsh" }
 
 Write-Host "[jingxi update] 开始升级鲸息自身…" -ForegroundColor Cyan
 

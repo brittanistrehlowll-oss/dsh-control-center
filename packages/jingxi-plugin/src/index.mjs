@@ -19,7 +19,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 export const name = 'jingxi-plugin';
 
 export function apply(ctx, config) {
-  const dshRoot = config.dshRoot || 'D:\\CodexD\\DSH';
+  const dshRoot = config.dshRoot || 'C:\\Users\\wx\\.dsh-install';
   const home = path.join(dshRoot, 'home');
   const jxHome = path.join(home, 'jingxi');
   const state = path.join(jxHome, 'state');

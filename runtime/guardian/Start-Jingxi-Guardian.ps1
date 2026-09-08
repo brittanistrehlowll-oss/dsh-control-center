@@ -31,7 +31,7 @@ param(
 Set-StrictMode -Version Latest
 $ErrorActionPreference = 'Continue'
 
-if (-not $DshRoot) { $DshRoot = 'D:\CodexD\DSH' }
+if (-not $DshRoot) { $DshRoot = 'C:\Users\wx\.dsh-install' }
 $dshHomeDir = Join-Path $DshRoot 'home'
 $jxHome = Join-Path $dshHomeDir 'jingxi'
 $statePath = Join-Path $jxHome 'state'

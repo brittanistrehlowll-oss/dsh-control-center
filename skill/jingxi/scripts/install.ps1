@@ -17,7 +17,7 @@ function Ok($m)   { Write-Host "  OK  $m" -ForegroundColor Green }
 function Warn($m) { Write-Host "  !!  $m" -ForegroundColor Yellow }
 
 # ———— 0. 定位 ————
-if (-not $DshHome) { $DshHome = "D:\CodexD\DSH\home" }
+if (-not $DshHome) { $DshHome = "C:\Users\wx\.dsh" }
 if (-not (Test-Path $DshHome)) { throw "DSH_HOME 不存在: $DshHome" }
 $repoRoot = Split-Path -Parent (Split-Path -Parent (Split-Path -Parent $PSScriptRoot))   # scripts -> jingxi -> skill -> repo root
 Step "DSH_HOME = $DshHome"

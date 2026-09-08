@@ -32,7 +32,7 @@ import { homedir } from 'node:os';
 // ————————————————————————————————————————————————
 
 const DEFAULT_DSH_CANDIDATES = [
-  resolve('D:\\CodexD\\DSH'),
+  resolve('C:\\Users\\wx\\.dsh-install'),
   join(homedir(), '.dsh'),
   join(homedir(), 'dsh')
 ];
@@ -90,7 +90,7 @@ async function detect({ dshRoot, profile }) {
     return {
       ok: false,
       dshRoot: undefined,
-      reason: 'DSH install not found (looked at D:\\CodexD\\DSH, ~/.dsh, ~/dsh)'
+      reason: 'DSH install not found (looked at C:\\Users\\wx\\.dsh-install, ~/.dsh, ~/dsh)'
     };
   }
   const profileDir = join(root, 'home', 'profiles', profile);

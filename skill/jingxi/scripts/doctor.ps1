@@ -16,7 +16,7 @@ function Fail($m) { Write-Host "  [FAIL] $m" -ForegroundColor Red }
 function Info($m) { Write-Host "  [info] $m" -ForegroundColor Gray }
 
 # ———— DSH 定位 ————
-if (-not $DshHome) { $DshHome = "D:\CodexD\DSH\home" }
+if (-not $DshHome) { $DshHome = "C:\Users\wx\.dsh" }
 Section "DSH"
 if (Test-Path $DshHome) {
   Ok "DSH_HOME = $DshHome"
@@ -60,7 +60,7 @@ if (Test-Path $guardianLog) {
   Warn "guardian.log 不存在（Guardian 未运行或未部署）"
 }
 # legacy watchdog fallback
-$wdLog = "D:\CodexD\DSH\logs\watchdog.log"
+$wdLog = "C:\Users\wx\.dsh-install\logs\watchdog.log"
 if (Test-Path $wdLog) { Info "legacy watchdog.log 存在（兼容期）" }
 
 # ———— 插件注册 ————
@@ -82,7 +82,7 @@ else { Fail "skill 未安装（先运行 bootstrap/Install-JingxiSkill.ps1）" }
 
 # ———— 更新能力 ————
 Section "更新能力"
-$dshPkg = 'D:\CodexD\DSH\node_modules\@deepseek-ai\dsh\package.json'
+$dshPkg = 'C:\Users\wx\.dsh-install\node_modules\@deepseek-ai\dsh\package.json'
 if (Test-Path $dshPkg) {
   $v = (Get-Content $dshPkg -Raw | ConvertFrom-Json).version
   Ok "DSH 版本: $v"

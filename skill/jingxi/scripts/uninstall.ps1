@@ -8,7 +8,7 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-if (-not $DshHome) { $DshHome = "D:\CodexD\DSH\home" }
+if (-not $DshHome) { $DshHome = "C:\Users\wx\.dsh" }
 
 Write-Host "[jingxi uninstall] 开始卸载…" -ForegroundColor Cyan
 

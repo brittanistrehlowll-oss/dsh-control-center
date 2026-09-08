@@ -27,11 +27,11 @@ function Write-Warn($msg) { Write-Host "  !!  $msg" -ForegroundColor Yellow }
 
 # ———— 1. 定位 DSH_HOME ————
 if (-not $DshHome) {
-  $candidates = @("$env:USERPROFILE\.dsh", "$env:LOCALAPPDATA\dsh", "D:\CodexD\DSH\home")
+  $candidates = @("$env:USERPROFILE\.dsh", "$env:LOCALAPPDATA\dsh", "C:\Users\wx\.dsh")
   foreach ($c in $candidates) { if (Test-Path $c) { $DshHome = $c; break } }
 }
 if (-not $DshHome -or -not (Test-Path $DshHome)) {
-  throw "无法定位 DSH_HOME。请用 -DshHome 显式指定（例如 D:\CodexD\DSH\home）。"
+  throw "无法定位 DSH_HOME。请用 -DshHome 显式指定（例如 C:\Users\wx\.dsh）。"
 }
 Write-Step "DSH_HOME = $DshHome"
 
