@@ -1,0 +1,41 @@
+{
+  "name": "dsh-jingxi",
+  "version": "1.0.1",
+  "private": true,
+  "description": "鲸息 — DSH Native Breath: a read-only Turn telemetry interpretation layer for DeepSeek Harness (third-party/community compatible project, not an official DeepSeek product). V1.0.1 Pure Breath: billing/quota surfaces removed; basic call facts + breath trajectory only.",
+  "type": "module",
+  "main": "./lib/index.js",
+  "exports": {
+    ".": "./lib/index.js",
+    "./client": "./lib/client.js",
+    "./package.json": "./package.json"
+  },
+  "dsh": {
+    "bundle": { "patch": "./cordis.patch.yml" },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-runtime"
+      ]
+    }
+  },
+  "engines": { "node": "^22.19.0 || >=24.0.0" },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1",
+    "@deepseek-ai/dsh-client-runtime": "^0.1.0-rc.8",
+    "react": "^18.2.0"
+  },
+  "scripts": {
+    "test": "node --test \"test/*.test.mjs\""
+  },
+  "files": [
+    "lib/index.js",
+    "lib/client.js",
+    "lib/asset-route.js",
+    "lib/dsh-update.js",
+    "lib/telemetry-fold.js",
+    "cordis.patch.yml",
+    "assets/icons/**/*"
+  ],
+  "license": "MIT"
+}

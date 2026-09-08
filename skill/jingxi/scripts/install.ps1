@@ -31,7 +31,7 @@ foreach ($d in 'bin','state','logs','backups') {
 $manifestPath = Join-Path $jxHome 'manifest.json'
 $manifest = @{
   name = 'jingxi'
-  version = '0.3.0'
+  version = '1.0.1'
   installedAt = (Get-Date -Format o)
   source = 'skill/jingxi'
   files = @()
@@ -63,26 +63,28 @@ if (Test-Path $hostSrc) {
   Warn "runtime/jingxi-host/jingxi-host.mjs 不存在（跳过，后续 Gate 补齐）"
 }
 
-# ———— 4. Plugin 注册（web profile cordis.patch.yml） ————
+# ———— 4. dsh-jingxi V1.0.1 包部署（profiles/node_modules）+ 注册 ————
+$pkgSrc = Join-Path $repoRoot 'packages\dsh-jingxi'
+$pkgDst = Join-Path $DshHome 'profiles\node_modules\dsh-jingxi'
+if (Test-Path $pkgSrc) {
+  New-Item -ItemType Directory -Force -Path $pkgDst | Out-Null
+  robocopy $pkgSrc $pkgDst /MIR /NFL /NDL /NJH /NJS | Out-Null
+  if ($LASTEXITCODE -gt 7) { throw "robocopy 部署 dsh-jingxi 失败（exit $LASTEXITCODE）" }
+  $manifest.files += 'profiles/node_modules/dsh-jingxi（包式部署，卸载时整目录移除）'
+  Ok "dsh-jingxi V1.0.1 包已部署（profiles/node_modules/dsh-jingxi）"
+} else {
+  Warn "packages/dsh-jingxi 不存在（跳过包部署）"
+}
 $profileDir = Join-Path $DshHome 'profiles\web'
 $patchPath = Join-Path $profileDir 'cordis.patch.yml'
 if (Test-Path $patchPath) {
   $patch = Get-Content $patchPath -Raw
-  if ($patch -match 'jingxi') {
-    Ok "web profile 已注册 jingxi（幂等）"
+  if ($patch -match 'name:\s*dsh-jingxi') {
+    Ok "web profile 已注册 dsh-jingxi（幂等）"
   } else {
-    # 部署插件（整个 src 目录：index + sidebar-dock + whale-breath-icon）
-    $pluginSrcDir = Join-Path $repoRoot 'packages\jingxi-plugin\src'
-    $pluginsDir = Join-Path $profileDir 'plugins'
-    New-Item -ItemType Directory -Force -Path (Join-Path $pluginsDir 'jingxi') | Out-Null
-    if (Test-Path $pluginSrcDir) {
-      Copy-Item -Path (Join-Path $pluginSrcDir '*') -Destination (Join-Path $pluginsDir 'jingxi') -Recurse -Force
-      $patch += "`n# jingxi plugin (installed by jingxi skill)`n- insert:`n    - id: jingxi-plugin`n      name: './plugins/jingxi/index.mjs'`n      inject: [webServer]`n"
-      Set-Content -Path $patchPath -Value $patch -Encoding UTF8
-      Ok "jingxi 插件目录已部署（plugins/jingxi/）+ cordis.patch.yml 条目已写入"
-    } else {
-      Warn "packages/jingxi-plugin/src 不存在（跳过插件注册，后续 Gate 补齐）"
-    }
+    $patch += "`n# dsh-jingxi V1.0.1 Pure Breath (installed by jingxi skill)`n- insert:`n    - id: jingxi`n      name: dsh-jingxi`n      inject: [webServer]`n"
+    Set-Content -Path $patchPath -Value $patch -Encoding UTF8
+    Ok "cordis.patch.yml 已写入 dsh-jingxi 包式行（inject: [webServer]）"
   }
 } else {
   Warn "web profile cordis.patch.yml 不存在（跳过插件注册）"

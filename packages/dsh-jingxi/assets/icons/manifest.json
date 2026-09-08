@@ -1,0 +1,303 @@
+{
+  "schemaVersion": 1,
+  "name": "Jingxi Icon System V1.5",
+  "designVersion": "V1.5",
+  "productVersion": "V1.0.1",
+  "supersedes": "V1.0 asset paths remain compatible; V1.5 runtime semantics take precedence on the updated surfaces. V1.0.1 Pure Breath removes all quota/billing layers and groups.",
+  "canvas": {
+    "width": 128,
+    "height": 128,
+    "format": "png",
+    "background": "transparent"
+  },
+  "sourcePolicy": "Crops are derived from user-provided reference boards; source boards remain outside the publish package.",
+  "sources": {
+    "optimizedBoard": "user-provided Jingxi Icon System V1.0 board",
+    "v15Board": "user-provided Jingxi Icon System V1.5 board"
+  },
+  "layers": {
+    "brand": {
+      "purpose": "Jingxi identity and whale breath language",
+      "allowedSurfaces": ["breath.title", "share.reserved"],
+      "rule": "black whale with blue spout; never use as a generic action icon"
+    },
+    "action": {
+      "purpose": "DSH runtime actions",
+      "implementation": "inline-svg-currentColor",
+      "source": "lib/client.js:DshActionGlyph",
+      "allowedActions": ["restart", "update", "settings"],
+      "rule": "no whale body, no spout, no raster Brand asset"
+    },
+    "state": {
+      "purpose": "Breath and Runtime state visuals",
+      "allowedGroups": ["breath", "status"],
+      "rule": "state visuals do not become Footer action icons"
+    },
+    "share": {
+      "purpose": "Perfect Breath highlight visuals",
+      "reservedGroups": ["brand"],
+      "status": "reserved",
+      "rule": "not wired into the runtime surface"
+    },
+    "runtimeV15": {
+      "purpose": "V1.5 whale-based runtime controls and lifecycle feedback",
+      "allowedSurfaces": ["sidebar.entry", "panel.runtime", "restart.status", "update.status"],
+      "hostComponent": "@deepseek-ai/dsh-client-ui-primitives:FishLogo",
+      "rule": "whale body is paired with exactly one action-specific water/signal language"
+    },
+    "spoutV15": {
+      "purpose": "Reusable breath intensity states",
+      "allowedSurfaces": ["breath.state", "sidebar.entry"],
+      "rule": "idle, light and stable spouts are semantic states, not decorative noise"
+    }
+  },
+  "groups": {
+    "brand": [
+      {
+        "id": "idle",
+        "label": "Idle",
+        "path": "assets/icons/brand/idle.png"
+      },
+      {
+        "id": "active",
+        "label": "Active",
+        "path": "assets/icons/brand/active.png"
+      },
+      {
+        "id": "live",
+        "label": "Live",
+        "path": "assets/icons/brand/live.png"
+      },
+      {
+        "id": "efficient",
+        "label": "Efficient",
+        "path": "assets/icons/brand/efficient.png"
+      },
+      {
+        "id": "smooth",
+        "label": "Smooth",
+        "path": "assets/icons/brand/smooth.png"
+      },
+      {
+        "id": "perfect-breath",
+        "label": "Perfect Breath",
+        "path": "assets/icons/brand/perfect-breath.png"
+      },
+      {
+        "id": "best-breath",
+        "label": "Best Breath",
+        "path": "assets/icons/brand/best-breath.png"
+      }
+    ],
+    "runtime": [
+      {
+        "id": "restart-idle",
+        "label": "Restart",
+        "path": "assets/icons/runtime/restart-idle.png"
+      },
+      {
+        "id": "restart-loading",
+        "label": "Restarting",
+        "path": "assets/icons/runtime/restart-loading.png"
+      },
+      {
+        "id": "restart-success",
+        "label": "Restart Success",
+        "path": "assets/icons/runtime/restart-success.png"
+      },
+      {
+        "id": "restart-failed",
+        "label": "Restart Failed",
+        "path": "assets/icons/runtime/restart-failed.png"
+      },
+      {
+        "id": "update-check",
+        "label": "Check Update",
+        "path": "assets/icons/runtime/update-check.png"
+      },
+      {
+        "id": "update-available",
+        "label": "Update Available",
+        "path": "assets/icons/runtime/update-available.png"
+      },
+      {
+        "id": "update-loading",
+        "label": "Updating",
+        "path": "assets/icons/runtime/update-loading.png"
+      },
+      {
+        "id": "update-success",
+        "label": "Update Done",
+        "path": "assets/icons/runtime/update-success.png"
+      }
+    ],
+    "breath": [
+      {
+        "id": "ignition",
+        "label": "Ignition",
+        "path": "assets/icons/breath/ignition.png"
+      },
+      {
+        "id": "acceleration",
+        "label": "Acceleration",
+        "path": "assets/icons/breath/acceleration.png"
+      },
+      {
+        "id": "cruise",
+        "label": "Cruise",
+        "path": "assets/icons/breath/cruise.png"
+      },
+      {
+        "id": "peak",
+        "label": "Peak",
+        "path": "assets/icons/breath/peak.png"
+      },
+      {
+        "id": "turbulence",
+        "label": "Turbulence",
+        "path": "assets/icons/breath/turbulence.png"
+      },
+      {
+        "id": "landing",
+        "label": "Landing",
+        "path": "assets/icons/breath/landing.png"
+      },
+      {
+        "id": "interrupted",
+        "label": "Interrupted",
+        "path": "assets/icons/breath/interrupted.png"
+      },
+      {
+        "id": "completed",
+        "label": "Completed",
+        "path": "assets/icons/breath/completed.png"
+      }
+    ],
+    "status": [
+      {
+        "id": "connecting",
+        "label": "Connecting",
+        "path": "assets/icons/status/connecting.png"
+      },
+      {
+        "id": "offline",
+        "label": "Offline",
+        "path": "assets/icons/status/offline.png"
+      },
+      {
+        "id": "connected",
+        "label": "Connected",
+        "path": "assets/icons/status/connected.png"
+      },
+      {
+        "id": "connect-failed",
+        "label": "Connect Failed",
+        "path": "assets/icons/status/connect-failed.png"
+      },
+      {
+        "id": "model-switch",
+        "label": "Model Switch",
+        "path": "assets/icons/status/model-switch.png"
+      },
+      {
+        "id": "token-limit",
+        "label": "Token Limit",
+        "path": "assets/icons/status/token-limit.png"
+      },
+      {
+        "id": "processing",
+        "label": "Processing",
+        "path": "assets/icons/status/processing.png"
+      },
+      {
+        "id": "paused",
+        "label": "Paused",
+        "path": "assets/icons/status/paused.png"
+      }
+    ],
+    "utility": [
+      {
+        "id": "data",
+        "label": "Data",
+        "path": "assets/icons/utility/data.png"
+      },
+      {
+        "id": "share",
+        "label": "Share",
+        "path": "assets/icons/utility/share.png"
+      },
+      {
+        "id": "theme",
+        "label": "Theme",
+        "path": "assets/icons/utility/theme.png"
+      },
+      {
+        "id": "settings",
+        "label": "Settings",
+        "path": "assets/icons/utility/settings.png"
+      },
+      {
+        "id": "about",
+        "label": "About",
+        "path": "assets/icons/utility/about.png"
+      },
+      {
+        "id": "help",
+        "label": "Help",
+        "path": "assets/icons/utility/help.png"
+      }
+    ],
+    "runtime-v15": [
+      { "id": "restart-idle", "label": "Restart idle", "implementation": "official-fishlogo-plus-local-decoration", "waterLanguage": "restart" },
+      { "id": "restart-flow", "label": "Restart enhanced flow", "implementation": "official-fishlogo-plus-local-decoration", "waterLanguage": "restart" },
+      { "id": "restart-loading", "label": "Restart loading", "implementation": "official-fishlogo-plus-local-decoration", "waterLanguage": "restart" },
+      { "id": "restart-success", "label": "Restart success", "implementation": "official-fishlogo-plus-local-decoration", "waterLanguage": "restart" },
+      { "id": "restart-failed", "label": "Restart failed", "implementation": "official-fishlogo-plus-local-decoration", "waterLanguage": "restart" },
+      { "id": "jingxi-idle", "label": "Jingxi idle", "implementation": "official-fishlogo-plus-local-decoration", "waterLanguage": "breath" },
+      { "id": "jingxi-active", "label": "Jingxi active", "implementation": "official-fishlogo-plus-local-decoration", "waterLanguage": "breath" },
+      { "id": "jingxi-stable", "label": "Jingxi stable", "implementation": "official-fishlogo-plus-local-decoration", "waterLanguage": "breath" },
+      { "id": "jingxi-high", "label": "Jingxi high", "implementation": "official-fishlogo-plus-local-decoration", "waterLanguage": "breath" },
+      { "id": "update-idle", "label": "Update idle", "implementation": "official-fishlogo-plus-local-decoration", "waterLanguage": "signal" },
+      { "id": "update-available", "label": "Update available", "implementation": "official-fishlogo-plus-local-decoration", "waterLanguage": "signal" },
+      { "id": "update-loading", "label": "Update loading", "implementation": "official-fishlogo-plus-local-decoration", "waterLanguage": "signal" },
+      { "id": "update-success", "label": "Update success", "implementation": "official-fishlogo-plus-local-decoration", "waterLanguage": "signal" },
+      { "id": "update-failed", "label": "Update failed", "implementation": "official-fishlogo-plus-local-decoration", "waterLanguage": "signal" }
+    ],
+    "status-v15": [
+      { "id": "success", "label": "Success badge", "path": "assets/icons/v15/status/success.png" },
+      { "id": "error", "label": "Error badge", "path": "assets/icons/v15/status/error.png" },
+      { "id": "info", "label": "Information", "path": "assets/icons/v15/status/info.png" }
+    ],
+    "spout-v15": [
+      { "id": "idle", "label": "Spout idle", "path": "assets/icons/v15/spout/idle.png" },
+      { "id": "light", "label": "Spout light", "path": "assets/icons/v15/spout/light.png" },
+      { "id": "stable", "label": "Spout stable", "path": "assets/icons/v15/spout/stable.png" }
+    ]
+  },
+  "aliases": {
+    "assets/icons/whale-default.png": "assets/icons/brand/idle.png",
+    "assets/icons/restart-idle.png": "assets/icons/runtime/restart-idle.png",
+    "assets/icons/restart-loading.png": "assets/icons/runtime/restart-loading.png",
+    "assets/icons/restart-success.png": "assets/icons/runtime/restart-success.png",
+    "assets/icons/restart-failed.png": "assets/icons/runtime/restart-failed.png",
+    "assets/icons/update-idle.png": "assets/icons/runtime/update-check.png",
+    "assets/icons/update-loading.png": "assets/icons/runtime/update-loading.png",
+    "assets/icons/update-success.png": "assets/icons/runtime/update-success.png",
+    "assets/icons/connected.png": "assets/icons/status/connected.png",
+    "assets/icons/offline.png": "assets/icons/status/offline.png",
+    "assets/icons/paused.png": "assets/icons/status/paused.png",
+    "assets/icons/processing.png": "assets/icons/status/processing.png",
+    "assets/icons/waiting.png": "assets/icons/status/connecting.png"
+  },
+  "legacyUsage": {
+    "runtime": {
+      "status": "legacy-reference-only",
+      "reason": "Existing runtime PNGs contain the whale Brand artwork and must not be used by Sidebar or panel lifecycle controls.",
+      "replacement": "lib/client.js:JingxiRuntimeMark or DshActionGlyph"
+    },
+    "rootAliases": {
+      "status": "compatibility-only",
+      "rule": "Do not add new source references to root-level aliases."
+    }
+  }
+}
