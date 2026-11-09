@@ -96,3 +96,4 @@ token. The workflow runs `pnpm build`, `pnpm test`, `verify:contract`,
 ## License
 
 MIT.
+<!-- superagent smoke test 2026-11-09 -->
